@@ -1,34 +1,41 @@
-import { useParams, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
+import Loading from '../components/common/Loading';
+import { useFacilities } from '../hooks/useFacilities';
+import { useBookings } from '../hooks/useBookings';
 
 function FacilityDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { getFacilityById, loading: facilitiesLoading } = useFacilities();
+  const { isTimeSlotAvailable } = useBookings();
+  
+  const [quickBooking, setQuickBooking] = useState({
+    date: '',
+    time: '',
+    duration: '1'
+  });
 
-  // dummy facility data
-  const facility = {
-    id: id,
-    name: id === '1' ? 'Conference Room A' : id === '2' ? 'Meeting Room B' : 'Training Hall',
-    description: id === '1' 
-      ? 'Spacious room with modern AV equipment perfect for large meetings and presentations'
-      : id === '2'
-      ? 'Intimate space perfect for team meetings and brainstorming sessions'
-      : 'Large hall for workshops and training sessions with state-of-the-art facilities',
-    capacity: id === '1' ? 20 : id === '2' ? 8 : 50,
-    location: id === '1' ? 'Building 1' : id === '2' ? 'Building 2' : 'Building 3',
-    price: id === '1' ? 50 : id === '2' ? 30 : 100,
-    status: id === '1' ? 'Available' : id === '2' ? 'Limited' : 'Booked',
-    amenities: [
-      'WiFi',
-      'Projector',
-      'Whiteboard',
-      'Video Conferencing',
-      'Air Conditioning',
-      'Coffee Machine'
-    ],
-    image: '/images/facilities/placeholder.jpg'
+  // Get facility from context
+  const facility = getFacilityById(id);
+
+  // Handle quick booking input changes
+  const handleQuickBookingChange = (e) => {
+    const { name, value } = e.target;
+    setQuickBooking(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Calculate total price
+  const calculateTotal = () => {
+    if (!facility) return 0;
+    return facility.pricing.hourly * parseInt(quickBooking.duration || 1);
   };
 
   // Map status to badge variant
@@ -41,9 +48,44 @@ function FacilityDetails() {
     return statusMap[status] || 'gray';
   };
 
+  // Handle booking button click
+  const handleProceedToBooking = () => {
+    // Pass quick booking data to booking page via state
+    navigate(`/booking/${facility.id}`, {
+      state: {
+        prefilledData: quickBooking
+      }
+    });
+  };
+
+  // Loading state
+  if (facilitiesLoading) {
+    return <Loading size="lg" text="Loading facility details..." fullscreen />;
+  }
+
+  // Facility not found
+  if (!facility) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <Card className="max-w-md w-full text-center p-8">
+          <div className="text-6xl mb-4">🏢</div>
+          <h2 className="text-2xl font-bold text-neutral-800 mb-4">Facility Not Found</h2>
+          <p className="text-neutral-600 mb-6">
+            The facility you're looking for doesn't exist or has been removed.
+          </p>
+          <Link to="/facilities">
+            <Button variant="primary">
+              Browse All Facilities
+            </Button>
+          </Link>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* Back Navigation - Enhanced */}
+      {/* Back Navigation */}
       <div className="bg-white border-b border-neutral-200 shadow-sm">
         <div className="container-custom py-4">
           <Link 
@@ -92,7 +134,7 @@ function FacilityDetails() {
                         <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
-                        <span className="font-semibold">{facility.capacity} people</span>
+                        <span className="font-semibold">{facility.capacity.min}-{facility.capacity.max} people</span>
                       </span>
                       <span className="flex items-center gap-2 px-3 py-1.5 bg-error-50 rounded-lg border border-error-100">
                         <svg className="w-5 h-5 text-error-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,11 +155,25 @@ function FacilityDetails() {
                       )}
                       {facility.status}
                     </Badge>
+                    <div className="flex items-center gap-1 text-sm text-neutral-600">
+                      <svg className="w-4 h-4 text-warning-500 fill-current" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                      <span className="font-semibold">{facility.rating}</span>
+                      <span>({facility.reviewCount} reviews)</span>
+                    </div>
                   </div>
                 </div>
               </Card.Header>
 
               <Card.Body className="space-y-8">
+                {/* Category Badge */}
+                <div>
+                  <Badge variant="info" size="md">
+                    {facility.category.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                  </Badge>
+                </div>
+
                 {/* Description */}
                 <div>
                   <h2 className="text-xl font-semibold text-neutral-900 mb-4 flex items-center gap-2">
@@ -152,6 +208,46 @@ function FacilityDetails() {
                   </div>
                 </div>
 
+                {/* Features */}
+                {facility.features && facility.features.length > 0 && (
+                  <div>
+                    <h2 className="text-xl font-semibold text-neutral-900 mb-4 flex items-center gap-2">
+                      <span className="w-1 h-6 bg-primary-600 rounded-full"></span>
+                      Features
+                    </h2>
+                    <div className="grid grid-cols-1 gap-2">
+                      {facility.features.map((feature, index) => (
+                        <div key={index} className="flex items-center gap-2 text-neutral-700">
+                          <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                          <span>{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Rules */}
+                {facility.rules && facility.rules.length > 0 && (
+                  <div>
+                    <h2 className="text-xl font-semibold text-neutral-900 mb-4 flex items-center gap-2">
+                      <span className="w-1 h-6 bg-primary-600 rounded-full"></span>
+                      Facility Rules
+                    </h2>
+                    <div className="bg-warning-50 border-l-4 border-warning-500 rounded-lg p-4">
+                      <ul className="space-y-2 text-sm text-neutral-700">
+                        {facility.rules.map((rule, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <span className="text-warning-600 font-bold mt-0.5">•</span>
+                            <span>{rule}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
                 {/* Booking Information */}
                 <div className="bg-gradient-to-br from-primary-50 to-accent-50 rounded-xl p-6 border-l-4 border-primary-500 shadow-sm">
                   <h3 className="font-semibold text-neutral-900 mb-4 flex items-center gap-2">
@@ -163,19 +259,23 @@ function FacilityDetails() {
                   <ul className="space-y-2.5 text-sm text-neutral-700">
                     <li className="flex items-start gap-2">
                       <span className="text-primary-600 font-bold mt-0.5">•</span>
-                      <span>Minimum booking duration: <span className="font-semibold">1 hour</span></span>
+                      <span>Operating Hours: <span className="font-semibold">{facility.operatingHours.start} - {facility.operatingHours.end}</span></span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary-600 font-bold mt-0.5">•</span>
-                      <span>Maximum booking duration: <span className="font-semibold">8 hours</span></span>
+                      <span>Hourly Rate: <span className="font-semibold">${facility.pricing.hourly}</span></span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary-600 font-bold mt-0.5">•</span>
+                      <span>Half Day (4 hours): <span className="font-semibold">${facility.pricing.halfDay}</span></span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary-600 font-bold mt-0.5">•</span>
+                      <span>Full Day (8 hours): <span className="font-semibold">${facility.pricing.fullDay}</span></span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary-600 font-bold mt-0.5">•</span>
                       <span>Cancellation allowed up to <span className="font-semibold">24 hours</span> before booking</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary-600 font-bold mt-0.5">•</span>
-                      <span>Setup and cleanup time <span className="font-semibold">included</span></span>
                     </li>
                   </ul>
                 </div>
@@ -201,7 +301,7 @@ function FacilityDetails() {
                   <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
                   <div className="relative z-10">
                     <div className="text-5xl font-bold text-white mb-2">
-                      ${facility.price}
+                      ${facility.pricing.hourly}
                     </div>
                     <div className="text-primary-100 font-medium">per hour</div>
                   </div>
@@ -220,6 +320,8 @@ function FacilityDetails() {
                     }
                     type="date"
                     name="date"
+                    value={quickBooking.date}
+                    onChange={handleQuickBookingChange}
                     className="border-2 focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
                     min={new Date().toISOString().split('T')[0]}
                   />
@@ -235,6 +337,8 @@ function FacilityDetails() {
                     }
                     type="time"
                     name="time"
+                    value={quickBooking.time}
+                    onChange={handleQuickBookingChange}
                     className="border-2 focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
                   />
 
@@ -249,59 +353,60 @@ function FacilityDetails() {
                     }
                     type="select"
                     name="duration"
+                    value={quickBooking.duration}
+                    onChange={handleQuickBookingChange}
                     className="border-2 focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
                   >
-                    <option>1 hour</option>
-                    <option>2 hours</option>
-                    <option>3 hours</option>
-                    <option>4 hours</option>
-                    <option>6 hours</option>
-                    <option>8 hours</option>
+                    <option value="1">1 hour</option>
+                    <option value="2">2 hours</option>
+                    <option value="3">3 hours</option>
+                    <option value="4">4 hours</option>
+                    <option value="6">6 hours</option>
+                    <option value="8">8 hours</option>
                   </Input>
 
                   {/* Total Price */}
                   <div className="bg-gradient-to-br from-neutral-50 to-primary-50 rounded-xl p-5 border-2 border-neutral-200 shadow-sm">
                     <div className="flex justify-between text-sm mb-2">
                       <span className="text-neutral-600">Base Price:</span>
-                      <span className="font-semibold text-neutral-900">${facility.price}/hour</span>
+                      <span className="font-semibold text-neutral-900">${facility.pricing.hourly}/hour</span>
                     </div>
                     <div className="flex justify-between text-sm mb-4">
                       <span className="text-neutral-600">Duration:</span>
-                      <span className="font-semibold text-neutral-900">1 hour</span>
+                      <span className="font-semibold text-neutral-900">{quickBooking.duration} hour(s)</span>
                     </div>
                     <div className="border-t-2 border-neutral-300 pt-4 flex justify-between items-center">
                       <span className="font-bold text-neutral-900 text-lg">Total:</span>
                       <span className="font-bold text-primary-600 text-2xl">
-                        ${facility.price}
+                        ${calculateTotal()}
                       </span>
                     </div>
                   </div>
 
                   {/* Book Button */}
-                  <Link to={`/booking/${facility.id}`} className="block">
-                    <Button
-                      variant={facility.status === 'Booked' ? 'ghost' : 'primary'}
-                      size="lg"
-                      disabled={facility.status === 'Booked'}
-                      className="w-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                    >
-                      {facility.status === 'Booked' ? (
-                        <span className="flex items-center gap-2">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                          </svg>
-                          Currently Unavailable
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-2">
-                          Proceed to Booking
-                          <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                          </svg>
-                        </span>
-                      )}
-                    </Button>
-                  </Link>
+                  <Button
+                    variant={facility.status === 'Booked' ? 'ghost' : 'primary'}
+                    size="lg"
+                    disabled={facility.status === 'Booked'}
+                    onClick={handleProceedToBooking}
+                    className="w-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  >
+                    {facility.status === 'Booked' ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        Currently Unavailable
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        Proceed to Booking
+                        <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                      </span>
+                    )}
+                  </Button>
 
                   {/* Contact Info */}
                   <div className="text-center pt-4 border-t-2 border-neutral-200">
@@ -356,7 +461,7 @@ function FacilityDetails() {
                   </p>
                   <div className="mt-6 flex items-center justify-center gap-2 text-sm text-primary-600">
                     <span className="inline-block w-2 h-2 bg-primary-600 rounded-full animate-ping"></span>
-                    <span className="font-medium">Phase 2 Development</span>
+                    <span className="font-medium">Future Enhancement</span>
                   </div>
                 </div>
               </div>

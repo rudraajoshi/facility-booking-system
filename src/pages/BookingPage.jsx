@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import Card from '../components/common/Card';
-import Button from '../components/common/Button';
-import Input from '../components/common/Input';
 import StepIndicator from '../components/booking/StepIndicator';
 import BookingSummary from '../components/booking/BookingSummary';
 import DateTimeStep from '../components/booking/DateTimeStep';
 import DetailsStep from '../components/booking/DetailsStep';
 import ConfirmationStep from '../components/booking/ConfirmationStep';
-// refactored
+import Loading from '../components/common/Loading';
+import { useFacilities } from '../hooks/useFacilities';
+import { useBookings } from '../hooks/useBookings';
+
 function BookingPage() {
   const { facilityId } = useParams();
   const navigate = useNavigate();
+  const { getFacilityById, loading: facilitiesLoading } = useFacilities();
+  const { addBooking } = useBookings();
+  
   const [currentStep, setCurrentStep] = useState(1);
   const [bookingData, setBookingData] = useState({
     date: '',
@@ -25,14 +28,8 @@ function BookingPage() {
     phone: ''
   });
 
-  // dummy facility data
-  const facility = {
-    id: facilityId,
-    name: facilityId === '1' ? 'Conference Room A' : facilityId === '2' ? 'Meeting Room B' : 'Training Hall',
-    price: facilityId === '1' ? 50 : facilityId === '2' ? 30 : 100,
-    capacity: facilityId === '1' ? 20 : facilityId === '2' ? 8 : 50,
-    location: facilityId === '1' ? 'Building 1' : facilityId === '2' ? 'Building 2' : 'Building 3'
-  };
+  // Get facility from context
+  const facility = getFacilityById(facilityId);
 
   const equipmentOptions = [
     'Projector',
@@ -76,14 +73,62 @@ function BookingPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Booking submitted:', bookingData);
-    alert('Booking submitted successfully! (This is a demo)');
+    
+    // Create booking object
+    const newBooking = {
+      facilityId: facility.id,
+      facilityName: facility.name,
+      date: bookingData.date,
+      timeSlot: bookingData.startTime,
+      duration: parseInt(bookingData.duration),
+      userName: bookingData.name,
+      userEmail: bookingData.email,
+      userPhone: bookingData.phone,
+      attendees: parseInt(bookingData.attendees),
+      purpose: bookingData.purpose,
+      specialRequests: bookingData.equipment.join(', '),
+      totalAmount: calculateTotal()
+    };
+
+    // Add booking to context (which saves to localStorage)
+    const createdBooking = addBooking(newBooking);
+    
+    console.log('Booking submitted:', createdBooking);
+    alert(`Booking confirmed! Your booking ID is: ${createdBooking.bookingId}`);
+    
+    // Navigate to my bookings
     navigate('/my-bookings');
   };
 
   const calculateTotal = () => {
-    return facility.price * parseInt(bookingData.duration || 1);
+    if (!facility) return 0;
+    return facility.pricing.hourly * parseInt(bookingData.duration || 1);
   };
+
+  // Loading state
+  if (facilitiesLoading) {
+    return <Loading size="lg" text="Loading facility details..." fullscreen />;
+  }
+
+  // Facility not found
+  if (!facility) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-neutral-800 mb-4">Facility Not Found</h2>
+          <p className="text-neutral-600 mb-6">
+            The facility you're looking for doesn't exist.
+          </p>
+          <Link 
+            to="/facilities" 
+            className="btn-primary inline-block"
+          >
+            Browse All Facilities
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -116,7 +161,7 @@ function BookingPage() {
             <StepIndicator currentStep={currentStep} />
 
             {/* content */}
-            <div onSubmit={handleSubmit}>
+            <div>
               {currentStep === 1 && (
                 <DateTimeStep
                   bookingData={bookingData}

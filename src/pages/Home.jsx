@@ -1,48 +1,79 @@
 import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Button from '../components/common/Button';
 import FacilityCard from '../components/facilities/FacilityCard';
 import BookingForm from '../components/booking/BookingForm';
-// refactored
-function Home() {
-  const facilities = [
-    {
-      id: 1,
-      name: 'Conference Room A',
-      status: 'Available',
-      description: 'Spacious room with modern AV equipment',
-      capacity: 20,
-      location: 'Building 1',
-      price: 50
-    },
-    {
-      id: 2,
-      name: 'Meeting Room B',
-      status: 'Limited',
-      description: 'Intimate space perfect for team meetings',
-      capacity: 8,
-      location: 'Building 2',
-      price: 30
-    },
-    {
-      id: 3,
-      name: 'Training Hall',
-      status: 'Booked',
-      description: 'Large hall for workshops and training sessions',
-      capacity: 50,
-      location: 'Building 3',
-      price: 100
-    }
-  ];
+import Loading from '../components/common/Loading';
+import {useFacilities}  from '../hooks/useFacilities';
+import { useBookings } from '../hooks/useBookings';
 
+function Home() {
+  const navigate = useNavigate();
+  const { facilities, loading, error } = useFacilities();
+  const { addBooking } = useBookings();
+
+  // Get only featured facilities (first 3)
+  const featuredFacilities = facilities.slice(0, 3);
   const handleBook = (facilityId) => {
     console.log(`Booking facility ${facilityId}`);
+    navigate(`/booking/${facilityId}`);
   };
   const handleViewDetails = (facilityId) => {
     console.log(`Viewing details for facility ${facilityId}`);
+    navigate(`/facilities/${facilityId}`);
   };
   const handleQuickBooking = (formData) => {
     console.log('Quick booking:', formData);
+    
+    // find the facility by name to get its ID
+    const facility = facilities.find(f => f.name === formData.facility);
+    if (facility) {
+      // create booking object
+      const bookingData = {
+        facilityId: facility.id,
+        facilityName: facility.name,
+        date: formData.date,
+        timeSlot: formData.time,
+        duration: parseInt(formData.duration),
+        userName: 'Guest User', // You can collect this from a login system
+        userEmail: 'guest@example.com', // You can collect this from a login system
+        userPhone: '', // You can collect this from a login system
+        attendees: 0, // Not collected in quick booking
+        purpose: formData.purpose || 'Quick Booking',
+        specialRequests: '',
+        totalAmount: facility.pricing.hourly * parseInt(formData.duration)
+      };
+
+      // Add booking
+      const newBooking = addBooking(bookingData);
+      
+      // Show success message
+      alert(`Booking confirmed! Your booking ID is: ${newBooking.bookingId}`);
+      
+      // Navigate to my bookings
+      navigate('/my-bookings');
+    } else {
+      alert('Please select a valid facility');
+    }
   };
+
+  if (loading) {
+    return <Loading size="lg" text="Loading facilities..." fullscreen />;
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-error-600 mb-4">Error Loading Facilities</h2>
+          <p className="text-neutral-600">{error}</p>
+          <Button onClick={() => window.location.reload()} className="mt-4">
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -73,22 +104,28 @@ function Home() {
           Featured Facilities
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {facilities.map((facility) => (
-            <FacilityCard
-              key={facility.id}
-              facility={facility}
-              onBook={handleBook}
-              onViewDetails={handleViewDetails}
-            />
-          ))}
-        </div>
+        {featuredFacilities.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-neutral-600 text-lg">No facilities available at the moment.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuredFacilities.map((facility) => (
+              <FacilityCard
+                key={facility.id}
+                facility={facility}
+                onBook={handleBook}
+                onViewDetails={handleViewDetails}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* quick booking */}
       <section className="bg-neutral-100 py-16">
         <div className="container-custom max-w-2xl">
-          <BookingForm onSubmit={handleQuickBooking} />
+          <BookingForm onSubmit={handleQuickBooking} facilities={facilities} />
         </div>
       </section>
     </>
