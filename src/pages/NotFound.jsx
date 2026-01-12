@@ -5,7 +5,7 @@ function NotFound() {
   return (
     <div className="min-h-[70vh] flex items-center justify-center bg-neutral-50">
       <div className="text-center px-4">
-        {/* 404 */}
+        {/* error 404 */}
         <div className="relative inline-block mb-8">
           <div className="text-9xl font-bold text-primary-600 mb-4 animate-bounce-slow">
             404

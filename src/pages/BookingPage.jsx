@@ -28,7 +28,7 @@ function BookingPage() {
     phone: ''
   });
 
-  // Get facility from context
+  // get facility from context
   const facility = getFacilityById(facilityId);
 
   const equipmentOptions = [
@@ -74,7 +74,18 @@ function BookingPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Create booking object
+    // validate required fields
+    if (!bookingData.date || !bookingData.startTime || !bookingData.purpose || 
+        !bookingData.attendees || !bookingData.name || !bookingData.email || 
+        !bookingData.phone) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    // save user email to localStorage for session persistence
+    localStorage.setItem('currentUserEmail', bookingData.email);
+    
+    // create booking object
     const newBooking = {
       facilityId: facility.id,
       facilityName: facility.name,
@@ -86,17 +97,30 @@ function BookingPage() {
       userPhone: bookingData.phone,
       attendees: parseInt(bookingData.attendees),
       purpose: bookingData.purpose,
-      specialRequests: bookingData.equipment.join(', '),
+      specialRequests: bookingData.equipment.length > 0 
+        ? bookingData.equipment.join(', ') 
+        : 'None',
       totalAmount: calculateTotal()
     };
 
-    // Add booking to context (which saves to localStorage)
+    // add booking to context => saved to localStorage
     const createdBooking = addBooking(newBooking);
     
+    // Log for debugging
     console.log('Booking submitted:', createdBooking);
-    alert(`Booking confirmed! Your booking ID is: ${createdBooking.bookingId}`);
+    console.log('User email saved:', bookingData.email);
     
-    // Navigate to my bookings
+    // show success message
+    alert(
+      `Booking confirmed successfully!\n\n` +
+      `Booking ID: ${createdBooking.bookingId}\n` +
+      `Facility: ${facility.name}\n` +
+      `Date: ${bookingData.date}\n` +
+      `Time: ${bookingData.startTime}\n` +
+      `Total: $${calculateTotal()}`
+    );
+    
+    // navigate to my bookings
     navigate('/my-bookings');
   };
 
@@ -105,23 +129,24 @@ function BookingPage() {
     return facility.pricing.hourly * parseInt(bookingData.duration || 1);
   };
 
-  // Loading state
+  // loading state
   if (facilitiesLoading) {
     return <Loading size="lg" text="Loading facility details..." fullscreen />;
   }
 
-  // Facility not found
+  // facility not found
   if (!facility) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
         <div className="text-center">
+          <div className="text-6xl mb-4">🏢</div>
           <h2 className="text-2xl font-bold text-neutral-800 mb-4">Facility Not Found</h2>
           <p className="text-neutral-600 mb-6">
-            The facility you're looking for doesn't exist.
+            The facility you're looking for doesn't exist or has been removed.
           </p>
           <Link 
             to="/facilities" 
-            className="btn-primary inline-block"
+            className="btn-primary inline-block px-6 py-3 rounded-lg"
           >
             Browse All Facilities
           </Link>
@@ -160,7 +185,7 @@ function BookingPage() {
             {/* step indicator */}
             <StepIndicator currentStep={currentStep} />
 
-            {/* content */}
+            {/* step content */}
             <div>
               {currentStep === 1 && (
                 <DateTimeStep
@@ -193,7 +218,7 @@ function BookingPage() {
             </div>
           </div>
 
-          {/* booking summary */}
+          {/* booking summary sidebar */}
           <div className="lg:col-span-1">
             <BookingSummary
               facility={facility}

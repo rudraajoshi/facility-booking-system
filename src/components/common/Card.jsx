@@ -1,10 +1,10 @@
 import PropTypes from 'prop-types';
 /**
- * Card component for displaying content in a card layout
- * @param {Object} props - Component props
- * @param {React.ReactNode} props.children - Card content
- * @param {string} props.className - Additional CSS classes
- * @param {boolean} props.hover - Enable hover effect
+ * card component for displaying content in a card layout
+ * @param {Object} props - component props
+ * @param {React.ReactNode} props.children - card content
+ * @param {string} props.className - additional CSS classes
+ * @param {boolean} props.hover - enable hover effect
  */
 const Card = ({ children, className = '', hover = false }) => {
   return (

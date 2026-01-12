@@ -22,7 +22,8 @@ function Facilities() {
     minCapacity: '',
     maxPrice: '',
     status: 'all',
-    amenities: []
+    amenities: [],
+    sortBy: 'name-asc' 
   });
 
   const handleFilterChange = (key, value) => {
@@ -40,15 +41,16 @@ function Facilities() {
       minCapacity: '',
       maxPrice: '',
       status: 'all',
-      amenities: []
+      amenities: [],
+      sortBy: 'name-asc'
     });
   };
 
-  // Apply search and filters
+  // apply search, filters, and sorting
   const getFilteredFacilities = () => {
     let results = [...facilities];
     
-    // Apply search first
+    // apply search first
     if (searchTerm && searchTerm.trim() !== '') {
       const lowercaseQuery = searchTerm.toLowerCase().trim();
       results = results.filter(facility =>
@@ -61,7 +63,7 @@ function Facilities() {
       );
     }
     
-    // Then apply filters to the search results
+    // then apply filters to the search results
     if (filters.category && filters.category !== 'all') {
       results = results.filter(f => f.category === filters.category);
     }
@@ -84,12 +86,34 @@ function Facilities() {
       results = results.filter(f => f.status === filters.status);
     }
     
+    // finally apply sorting
+    if (filters.sortBy) {
+      results = [...results].sort((a, b) => {
+        switch (filters.sortBy) {
+          case 'name-asc':
+            return a.name.localeCompare(b.name);
+          case 'name-desc':
+            return b.name.localeCompare(a.name);
+          case 'price-asc':
+            return a.pricing.hourly - b.pricing.hourly;
+          case 'price-desc':
+            return b.pricing.hourly - a.pricing.hourly;
+          case 'rating-desc':
+            return b.rating - a.rating;
+          case 'capacity-desc':
+            return b.capacity.max - a.capacity.max;
+          default:
+            return 0;
+        }
+      });
+    }
+    
     return results;
   };
 
   const filteredFacilities = getFilteredFacilities();
 
-  // Error state
+  // error state
   if (error) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">

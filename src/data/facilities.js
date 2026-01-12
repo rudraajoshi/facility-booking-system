@@ -6,8 +6,6 @@ export const facilitiesData =[
         category: 'meeting-room',
         description: "Spacious conference room with modern AV equipment, perfect for presentations and large meetings, video conferencing capabilities, high-speed internet, as well as comfortable seating.",
         images: [
-            '/images/conference-room-1.jpeg',
-            '/images/conference-room-2.jpg',
             '/images/conference-room-3.jpg'
         ],
         capacity: { min: 10, max: 20},
@@ -54,7 +52,6 @@ export const facilitiesData =[
         category: 'meeting-room',
         description: 'Intimate meeting space perfect for small team meetings and brainstorming sessions. Equipped with modern furniture and collaboration tools.',
         images: [
-            '/images/meeting-room-1.jpg',
             '/images/meeting-room-2.jpg'
         ],
         capacity: { mind: 4, max: 8},
@@ -97,8 +94,7 @@ export const facilitiesData =[
         category: 'training-room',
         description: 'Large hall designed for workshops, training sessions and seminars. Features theatre-style seating and professional audio-visual setup.',
         images: [
-            '/images/training-room-1.jpg',
-            '/images/training-room-2.jpg',
+            '/images/training-room-1.jpg'
         ],
         capacity: { min: 20, max: 50},
         pricing: {
@@ -145,8 +141,7 @@ export const facilitiesData =[
         category: 'meeting-room',
         description: 'Premium boardroom for executive meetings and client presentations. Elegant design with top-tier amenities',
         images: [
-            '/images/boardroom-1.jpg',
-            '/images/boardroom-2.jpg'
+            '/images/boardroom-1.jpg'
         ],
         capacity: { min: 6, max: 12},
         pricing: {

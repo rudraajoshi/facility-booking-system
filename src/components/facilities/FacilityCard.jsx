@@ -17,6 +17,8 @@ const FacilityCard = ({ facility, onBook, onViewDetails }) => {
     }
   };
 
+  const isBooked = facility.status.toLowerCase() === 'booked';
+
   return (
     <Card hover>
       <Card.Header>
@@ -25,6 +27,7 @@ const FacilityCard = ({ facility, onBook, onViewDetails }) => {
           {facility.status}
         </Badge>
       </Card.Header>
+      
       <Card.Body>
         <p className="text-neutral-600 mb-4">{facility.description}</p>
         <div className="flex items-center gap-4 text-sm text-neutral-500">
@@ -32,9 +35,14 @@ const FacilityCard = ({ facility, onBook, onViewDetails }) => {
           <span>📍 {facility.location}</span>
         </div>
       </Card.Body>
-      <Card.Footer>
-        <span className="text-sm text-neutral-500">${facility.pricing.hourly}/hour</span>
-        {facility.status === 'Booked' ? (
+      
+      <Card.Footer className="flex items-center justify-between">
+        <span className="text-sm text-neutral-500">
+          ${facility.pricing.hourly}/hour
+        </span>
+        
+        <div className="flex gap-2">
+          {/* view details */}
           <Button 
             variant="outline" 
             size="sm" 
@@ -42,15 +50,18 @@ const FacilityCard = ({ facility, onBook, onViewDetails }) => {
           >
             View Details
           </Button>
-        ) : (
-          <Button 
-            variant="primary" 
-            size="sm" 
-            onClick={() => onBook(facility.id)}
-          >
-            Book Now
-          </Button>
-        )}
+          
+          {/* book now */}
+          {!isBooked && (
+            <Button 
+              variant="primary" 
+              size="sm" 
+              onClick={() => onBook(facility.id)}
+            >
+              Book Now
+            </Button>
+          )}
+        </div>
       </Card.Footer>
     </Card>
   );

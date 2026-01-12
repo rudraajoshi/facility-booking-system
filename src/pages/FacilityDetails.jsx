@@ -7,6 +7,8 @@ import Input from '../components/common/Input';
 import Loading from '../components/common/Loading';
 import { useFacilities } from '../hooks/useFacilities';
 import { useBookings } from '../hooks/useBookings';
+import FacilityImageGallery from '../components/facilities/FacilityImageGallery';
+import Calendar from '../components/booking/Calendar';
 
 function FacilityDetails() {
   const { id } = useParams();
@@ -20,10 +22,22 @@ function FacilityDetails() {
     duration: '1'
   });
 
-  // Get facility from context
+  const [selectedCalendarSlot, setSelectedCalendarSlot] = useState(null);
+
+
+  // get facility from context
   const facility = getFacilityById(id);
 
-  // Handle quick booking input changes
+  const existingBookings = {
+  '2026-01-15': ['09:00', '10:00', '14:00', '15:00'],
+  '2026-01-16': ['11:00', '15:00', '17:00'],
+  '2026-01-18': ['09:00', '10:00'],
+  '2026-01-20': ['09:00', '10:00', '11:00', '13:00', '14:00'],
+  '2026-01-22': ['15:00', '16:00', '18:00']
+};
+
+
+  // handle quick booking input changes
   const handleQuickBookingChange = (e) => {
     const { name, value } = e.target;
     setQuickBooking(prev => ({
@@ -32,13 +46,28 @@ function FacilityDetails() {
     }));
   };
 
-  // Calculate total price
+  const handleCalendarSlotSelect = (dateTime) => {
+  setSelectedCalendarSlot(dateTime);
+  
+  setQuickBooking({
+    date: dateTime.date,
+    time: dateTime.time,
+    duration: '2' 
+  });
+  
+
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+};
+  // calculate total price
   const calculateTotal = () => {
     if (!facility) return 0;
     return facility.pricing.hourly * parseInt(quickBooking.duration || 1);
   };
 
-  // Map status to badge variant
+  // map status to badge variant
   const getStatusVariant = (status) => {
     const statusMap = {
       'Available': 'success',
@@ -48,9 +77,9 @@ function FacilityDetails() {
     return statusMap[status] || 'gray';
   };
 
-  // Handle booking button click
+  // handle booking button click
   const handleProceedToBooking = () => {
-    // Pass quick booking data to booking page via state
+    // pass quick booking data to booking page via state
     navigate(`/booking/${facility.id}`, {
       state: {
         prefilledData: quickBooking
@@ -58,12 +87,12 @@ function FacilityDetails() {
     });
   };
 
-  // Loading state
+  // loading state
   if (facilitiesLoading) {
     return <Loading size="lg" text="Loading facility details..." fullscreen />;
   }
 
-  // Facility not found
+  // facility not found
   if (!facility) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
@@ -85,7 +114,7 @@ function FacilityDetails() {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* Back Navigation */}
+      {/* back navigation */}
       <div className="bg-white border-b border-neutral-200 shadow-sm">
         <div className="container-custom py-4">
           <Link 
@@ -102,26 +131,17 @@ function FacilityDetails() {
 
       <div className="container-custom py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
+          {/* main */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Image Gallery */}
+            {/* img gallery */}
             <Card className="overflow-hidden group">
-              <div className="aspect-video bg-gradient-to-br from-primary-100 via-primary-200 to-accent-100 rounded-t-lg flex items-center justify-center relative overflow-hidden">
-                {/* Animated background pattern */}
-                <div className="absolute inset-0 opacity-20">
-                  <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full blur-2xl animate-pulse-slow"></div>
-                  <div className="absolute bottom-10 right-10 w-40 h-40 bg-primary-300 rounded-full blur-3xl animate-pulse-slow"></div>
-                </div>
-                
-                <div className="text-center relative z-10">
-                  <div className="text-6xl mb-2 animate-bounce-slow">🏢</div>
-                  <p className="text-neutral-600 font-medium">Image Gallery Coming Soon</p>
-                  <p className="text-sm text-neutral-500 mt-1">Professional photos will be displayed here</p>
-                </div>
-              </div>
+              <FacilityImageGallery 
+                images={facility.images} 
+                facilityName={facility.name} 
+              />
             </Card>
 
-            {/* Facility Info */}
+            {/* facility info */}
             <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
               <Card.Header className="border-b border-neutral-200 bg-gradient-to-r from-neutral-50 to-white">
                 <div className="flex items-start justify-between">
@@ -167,14 +187,14 @@ function FacilityDetails() {
               </Card.Header>
 
               <Card.Body className="space-y-8">
-                {/* Category Badge */}
+                {/* category badge */}
                 <div>
                   <Badge variant="info" size="md">
                     {facility.category.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                   </Badge>
                 </div>
 
-                {/* Description */}
+                {/* description */}
                 <div>
                   <h2 className="text-xl font-semibold text-neutral-900 mb-4 flex items-center gap-2">
                     <span className="w-1 h-6 bg-primary-600 rounded-full"></span>
@@ -185,7 +205,7 @@ function FacilityDetails() {
                   </p>
                 </div>
 
-                {/* Amenities */}
+                {/* amenities */}
                 <div>
                   <h2 className="text-xl font-semibold text-neutral-900 mb-4 flex items-center gap-2">
                     <span className="w-1 h-6 bg-primary-600 rounded-full"></span>
@@ -208,7 +228,7 @@ function FacilityDetails() {
                   </div>
                 </div>
 
-                {/* Features */}
+                {/* features */}
                 {facility.features && facility.features.length > 0 && (
                   <div>
                     <h2 className="text-xl font-semibold text-neutral-900 mb-4 flex items-center gap-2">
@@ -228,7 +248,7 @@ function FacilityDetails() {
                   </div>
                 )}
 
-                {/* Rules */}
+                {/* rules */}
                 {facility.rules && facility.rules.length > 0 && (
                   <div>
                     <h2 className="text-xl font-semibold text-neutral-900 mb-4 flex items-center gap-2">
@@ -248,7 +268,7 @@ function FacilityDetails() {
                   </div>
                 )}
 
-                {/* Booking Information */}
+                {/* booking information */}
                 <div className="bg-gradient-to-br from-primary-50 to-accent-50 rounded-xl p-6 border-l-4 border-primary-500 shadow-sm">
                   <h3 className="font-semibold text-neutral-900 mb-4 flex items-center gap-2">
                     <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,7 +303,7 @@ function FacilityDetails() {
             </Card>
           </div>
 
-          {/* Sidebar */}
+          {/* sidebar */}
           <div className="lg:col-span-1">
             <Card className="sticky top-24 shadow-xl border-2 border-primary-100">
               <Card.Header className="border-b border-neutral-200 bg-gradient-to-r from-primary-50 to-accent-50">
@@ -296,7 +316,7 @@ function FacilityDetails() {
               </Card.Header>
               
               <Card.Body className="space-y-6">
-                {/* Pricing */}
+                {/* pricing */}
                 <div className="text-center py-6 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl shadow-lg relative overflow-hidden">
                   <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
                   <div className="relative z-10">
@@ -307,7 +327,7 @@ function FacilityDetails() {
                   </div>
                 </div>
 
-                {/* Quick Booking Form */}
+                {/* quick booking form */}
                 <div className="space-y-4">
                   <Input 
                     label={
@@ -365,7 +385,7 @@ function FacilityDetails() {
                     <option value="8">8 hours</option>
                   </Input>
 
-                  {/* Total Price */}
+                  {/* total price */}
                   <div className="bg-gradient-to-br from-neutral-50 to-primary-50 rounded-xl p-5 border-2 border-neutral-200 shadow-sm">
                     <div className="flex justify-between text-sm mb-2">
                       <span className="text-neutral-600">Base Price:</span>
@@ -383,7 +403,7 @@ function FacilityDetails() {
                     </div>
                   </div>
 
-                  {/* Book Button */}
+                  {/* book button */}
                   <Button
                     variant={facility.status === 'Booked' ? 'ghost' : 'primary'}
                     size="lg"
@@ -408,7 +428,7 @@ function FacilityDetails() {
                     )}
                   </Button>
 
-                  {/* Contact Info */}
+                  {/* contact info */}
                   <div className="text-center pt-4 border-t-2 border-neutral-200">
                     <p className="text-sm text-neutral-600 mb-3 flex items-center justify-center gap-2">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -431,43 +451,54 @@ function FacilityDetails() {
             </Card>
           </div>
         </div>
-
-        {/* Availability Calendar Section */}
-        <div className="mt-12 animate-fade-in-up">
-          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <Card.Header className="bg-gradient-to-r from-neutral-50 to-white border-b-2 border-neutral-200">
-              <Card.Title className="flex items-center gap-2">
-                <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Availability Calendar
-              </Card.Title>
-            </Card.Header>
-            <Card.Body>
-              <div className="bg-gradient-to-br from-primary-50 via-accent-50 to-primary-50 border-2 border-dashed border-primary-300 rounded-xl p-16 text-center relative overflow-hidden">
-                {/* Background decoration */}
-                <div className="absolute inset-0 opacity-10">
-                  <div className="absolute top-10 right-10 w-32 h-32 bg-primary-400 rounded-full blur-3xl animate-pulse-slow"></div>
-                  <div className="absolute bottom-10 left-10 w-40 h-40 bg-accent-400 rounded-full blur-3xl animate-pulse-slow"></div>
-                </div>
-                
-                <div className="relative z-10">
-                  <div className="text-7xl mb-6 animate-bounce-slow">📅</div>
-                  <h3 className="text-3xl font-bold text-neutral-900 mb-3">
-                    Calendar View Coming Soon
-                  </h3>
-                  <p className="text-neutral-600 text-lg max-w-2xl mx-auto">
-                    Interactive calendar showing available time slots will be displayed here.
-                  </p>
-                  <div className="mt-6 flex items-center justify-center gap-2 text-sm text-primary-600">
-                    <span className="inline-block w-2 h-2 bg-primary-600 rounded-full animate-ping"></span>
-                    <span className="font-medium">Future Enhancement</span>
-                  </div>
-                </div>
-              </div>
-            </Card.Body>
-          </Card>
+<div className="mt-12">
+  <Calendar
+    facilityId={facility.id}
+    existingBookings={existingBookings}
+    onDateSelect={handleCalendarSlotSelect}
+  />
+  
+  {/* show confirmation message when slot is selected */}
+  {selectedCalendarSlot && (
+    <Card className="mt-6 border-2 border-success-200 shadow-lg animate-fade-in">
+      <Card.Body>
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0">
+            <div className="w-12 h-12 bg-success-100 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <div className="flex-1">
+            <h4 className="font-semibold text-success-900 mb-2">Time Slot Selected!</h4>
+            <p className="text-success-700 text-sm mb-3">
+              You've selected <span className="font-bold">
+                {new Date(selectedCalendarSlot.dateObject).toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  month: 'long', 
+                  day: 'numeric',
+                  year: 'numeric'
+                })}
+              </span> at <span className="font-bold">{selectedCalendarSlot.time}</span>
+            </p>
+            <p className="text-success-600 text-sm">
+              The booking form above has been auto-filled. Scroll up to complete your booking or select a different time slot.
+            </p>
+          </div>
+          <button
+            onClick={() => setSelectedCalendarSlot(null)}
+            className="flex-shrink-0 text-neutral-400 hover:text-neutral-600 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
+      </Card.Body>
+    </Card>
+  )}
+</div>
       </div>
     </div>
   );

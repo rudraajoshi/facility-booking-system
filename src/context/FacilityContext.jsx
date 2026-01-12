@@ -1,7 +1,6 @@
 import { createContext, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import facilitiesData from '../data/facilities';
-
 // facility context to manage data globally
 export const FacilityContext = createContext();
 
@@ -87,7 +86,6 @@ export const FacilityProvider = ({children}) => {
             )
         );
     };
-
     /** 
      * get facilities by category
      * @param {String} category

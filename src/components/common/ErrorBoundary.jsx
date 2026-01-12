@@ -1,9 +1,9 @@
 import { Component } from 'react';
 import PropTypes from 'prop-types';
 /**
- * Error Boundary component to catch React errors
- * @param {Object} props - Component props
- * @param {React.ReactNode} props.children - Child components to wrap
+ * error Boundary component to catch React errors
+ * @param {Object} props - component props
+ * @param {React.ReactNode} props.children - child components to wrap
  */
 class ErrorBoundary extends Component {
   constructor(props) {
