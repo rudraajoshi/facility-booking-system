@@ -259,7 +259,7 @@ const Calendar = ({ facilityId, onDateSelect, existingBookings = [] }) => {
         </Card.Body>
       </Card>
 
-      {/* Ttime slots => visible when date is selected */}
+      {/* time slots => visible when date is selected */}
       {selectedDate && (
         <Card>
           <Card.Header className="border-b border-neutral-200">

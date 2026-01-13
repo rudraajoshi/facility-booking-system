@@ -1,11 +1,22 @@
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
+import FacilityCard from '../components/facilities/FacilityCard';
+import Loading from '../components/common/Loading';
 import { useAuth } from '../hooks/useAuth';
+import { useFacilities } from '../hooks/useFacilities';
 
 function Home() {
   const navigate = useNavigate();
   const { isAuthenticated, currentUser } = useAuth();
+  const { facilities, loading, error } = useFacilities();
+  const featuredFacilities = facilities.slice(0, 6);
+  const handleBook = (facilityId) => {
+    navigate(`/booking/${facilityId}`);
+  };
+  const handleViewDetails = (facilityId) => {
+    navigate(`/facilities/${facilityId}`);
+  };
 
   const benefits = [
     {
@@ -80,8 +91,7 @@ function Home() {
   return (
     <>
       {/* hero */}
-      <section className="bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white py-20 relative overflow-hidden">
-        {/* decorative */}
+      <section className="bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 dark:from-primary-800 dark:via-primary-900 dark:to-neutral-900 text-white py-20 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-64 h-64 bg-white rounded-full blur-3xl animate-pulse-slow"></div>
           <div className="absolute bottom-20 right-20 w-80 h-80 bg-accent-300 rounded-full blur-3xl animate-pulse-slow"></div>
@@ -91,14 +101,14 @@ function Home() {
           <h1 className="text-5xl md:text-6xl font-display font-bold mb-6 animate-fade-in">
             Book Your Facility in Seconds
           </h1>
-          <p className="text-xl md:text-2xl text-primary-100 mb-8 max-w-3xl mx-auto animate-fade-in-up">
+          <p className="text-xl md:text-2xl text-primary-100 dark:text-primary-200 mb-8 max-w-3xl mx-auto animate-fade-in-up">
             Reserve conference rooms, meeting spaces, and more with ease
           </p>
           
           {isAuthenticated() ? (
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up">
               <div className="bg-white/10 backdrop-blur-sm px-6 py-3 rounded-lg border border-white/20">
-                <p className="text-primary-100 text-sm">Welcome back,</p>
+                <p className="text-primary-100 dark:text-primary-200 text-sm">Welcome back,</p>
                 <p className="text-white font-semibold text-lg">{currentUser?.name}! 👋</p>
               </div>
               <Link to="/facilities">
@@ -136,15 +146,61 @@ function Home() {
         </div>
       </section>
 
+      {/* featured facilities*/}
+      <section className="py-20 bg-white dark:bg-neutral-950">
+        <div className="container-custom">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-display font-bold text-neutral-900 dark:text-neutral-100 mb-4">
+              Featured Facilities
+            </h2>
+            <p className="text-xl text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
+              Browse our top-rated facilities available for booking
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="py-12">
+              <Loading size="lg" text="Loading facilities..." />
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <p className="text-error-600 dark:text-error-400 mb-4">{error}</p>
+              <Button onClick={() => window.location.reload()}>Retry</Button>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                {featuredFacilities.map((facility) => (
+                  <FacilityCard
+                    key={facility.id}
+                    facility={facility}
+                    onBook={handleBook}
+                    onViewDetails={handleViewDetails}
+                  />
+                ))}
+              </div>
+
+              <div className="text-center">
+                <Link to="/facilities">
+                  <Button variant="primary" size="lg" className="shadow-lg hover:shadow-xl">
+                    View All Facilities
+                  </Button>
+                </Link>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
       {/* stats */}
-      <section className="py-16 bg-white border-b border-neutral-200">
+      <section className="py-16 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
         <div className="container-custom">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="text-5xl mb-2">{stat.icon}</div>
-                <div className="text-4xl font-bold text-primary-600 mb-2">{stat.number}</div>
-                <div className="text-neutral-600 font-medium">{stat.label}</div>
+                <div className="text-4xl font-bold text-primary-600 dark:text-primary-400 mb-2">{stat.number}</div>
+                <div className="text-neutral-600 dark:text-neutral-400 font-medium">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -152,13 +208,13 @@ function Home() {
       </section>
 
       {/* benefits */}
-      <section className="py-20 bg-gradient-to-br from-neutral-50 to-white">
+      <section className="py-20 bg-gradient-to-br from-neutral-50 to-white dark:from-neutral-900 dark:to-neutral-950">
         <div className="container-custom">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-display font-bold text-neutral-900 mb-4">
+            <h2 className="text-4xl md:text-5xl font-display font-bold text-neutral-900 dark:text-neutral-100 mb-4">
               Why Choose Us?
             </h2>
-            <p className="text-xl text-neutral-600 max-w-2xl mx-auto">
+            <p className="text-xl text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
               Experience the best facility booking service with features designed for your convenience
             </p>
           </div>
@@ -167,7 +223,7 @@ function Home() {
             {benefits.map((benefit, index) => (
               <Card 
                 key={index} 
-                className="group hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-primary-200 overflow-hidden"
+                className="group hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-primary-200 dark:hover:border-primary-800 overflow-hidden"
               >
                 <Card.Body className="p-8">
                   {/* icons */}
@@ -176,12 +232,12 @@ function Home() {
                   </div>
 
                   {/* title */}
-                  <h3 className="text-2xl font-bold text-neutral-900 mb-3 group-hover:text-primary-600 transition-colors">
+                  <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-3 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                     {benefit.title}
                   </h3>
 
                   {/* desc */}
-                  <p className="text-neutral-600 leading-relaxed">
+                  <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
                     {benefit.description}
                   </p>
                 </Card.Body>
@@ -190,76 +246,8 @@ function Home() {
           </div>
         </div>
       </section>
-
-      {/* how it works */}
-      <section className="py-20 bg-white">
-        <div className="container-custom">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-display font-bold text-neutral-900 mb-4">
-              How It Works
-            </h2>
-            <p className="text-xl text-neutral-600 max-w-2xl mx-auto">
-              Book your perfect facility in three simple steps
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {/* step1 */}
-            <div className="text-center relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white text-3xl font-bold mx-auto mb-6 shadow-lg">
-                1
-              </div>
-              <h3 className="text-2xl font-bold text-neutral-900 mb-3">Browse Facilities</h3>
-              <p className="text-neutral-600">
-                Explore our wide range of premium facilities with detailed information and photos
-              </p>
-              {/* arrow icon */}
-              <div className="hidden md:block absolute top-10 -right-4 text-primary-300">
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </div>
-            </div>
-
-            {/* step2 */}
-            <div className="text-center relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-accent-500 to-accent-600 rounded-full flex items-center justify-center text-white text-3xl font-bold mx-auto mb-6 shadow-lg">
-                2
-              </div>
-              <h3 className="text-2xl font-bold text-neutral-900 mb-3">Select Date & Time</h3>
-              <p className="text-neutral-600">
-                Choose your preferred date, time slot, and duration that works best for you
-              </p>
-              {/* arrow icon */}
-              <div className="hidden md:block absolute top-10 -right-4 text-primary-300">
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </div>
-            </div>
-
-            {/* step3 */}
-            <div className="text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-success-500 to-success-600 rounded-full flex items-center justify-center text-white text-3xl font-bold mx-auto mb-6 shadow-lg">
-                3
-              </div>
-              <h3 className="text-2xl font-bold text-neutral-900 mb-3">Confirm Booking</h3>
-              <p className="text-neutral-600">
-                Review your booking details and confirm. You'll receive instant confirmation!
-              </p>
-            </div>
-          </div>
-
-          <div className="text-center mt-12">
-            <Link to="/facilities">
-              <Button variant="primary" size="lg" className="shadow-lg hover:shadow-xl">
-                Get Started Now
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
     </>
   );
 }
+
 export default Home;

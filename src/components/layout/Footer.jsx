@@ -90,7 +90,7 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Contact Info */}
+          {/* contact */}
           <div>
             <h3 className="text-white font-semibold mb-4">Contact</h3>
             <ul className="space-y-3 text-sm">
@@ -111,7 +111,7 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Bottom Bar - Copyright */}
+      {/* copright */}
       <div className="border-t border-neutral-800">
         <div className="container-custom py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-neutral-400">
