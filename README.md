@@ -3,9 +3,9 @@ A comprehensive facility booking system using React 18+, React Router, Tailwind 
 
 #Table of Contents
 
--[Project Overview](#project-overview)
+- [Project Overview](#project-overview)
 
--[Features](#features)  
+- [Features](#features)  
 - [Architecture](#architecture)
 - [Directory Structure](#directory-structure)   
 - [Data Storage](#data-storage)  
