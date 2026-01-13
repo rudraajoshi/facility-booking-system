@@ -2,6 +2,7 @@ import Card from '../common/Card';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
 import PropTypes from 'prop-types';
+import { Link } from 'react-router-dom';
 
 const FacilityCard = ({ facility, onBook, onViewDetails }) => {
   const getBadgeVariant = (status) => {
@@ -40,26 +41,20 @@ const FacilityCard = ({ facility, onBook, onViewDetails }) => {
         <span className="text-sm text-neutral-500">
           ${facility.pricing.hourly}/hour
         </span>
-        
+  
         <div className="flex gap-2">
-          {/* view details */}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => onViewDetails(facility.id)}
-          >
-            View Details
-          </Button>
-          
-          {/* book now */}
-          {!isBooked && (
-            <Button 
-              variant="primary" 
-              size="sm" 
-              onClick={() => onBook(facility.id)}
-            >
-              Book Now
+          <Link to={`/facilities/${facility.id}`}>
+            <Button variant="outline" size="sm">
+              View Details
             </Button>
+          </Link>
+
+          {!isBooked && (
+            <Link to={`/booking/${facility.id}`}>
+              <Button variant="primary" size="sm">
+                Book Now
+              </Button>
+            </Link>
           )}
         </div>
       </Card.Footer>
