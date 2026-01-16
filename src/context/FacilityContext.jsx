@@ -1,7 +1,6 @@
 import { createContext, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import facilitiesData from '../data/facilities';
-// facility context to manage data globally
+
 export const FacilityContext = createContext();
 
 export const FacilityProvider = ({children}) => {
@@ -9,22 +8,30 @@ export const FacilityProvider = ({children}) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // initialise data
+    // fetch facilities from MSW API
     useEffect(() => {
-        try {
-            setLoading(true);
-            setTimeout(() => {
-                setFacilities(facilitiesData);
+        const fetchFacilities = async () => {
+            try {
+                setLoading(true);
+                const response = await fetch('/api/facilities');
+                const result = await response.json();
+                
+                if (result.success) {
+                    setFacilities(result.data);
+                }
+            } catch (error) {
+                setError('Failed to load facilities');
+                console.error(error);
+            } finally {
                 setLoading(false);
-            }, 500);
-        } catch (error) {
-            setError('Failed to load facilities');
-            setLoading(false);
-        }
+            }
+        };
+        
+        fetchFacilities();
     }, []);
 
     /** 
-     * get facilities by ID
+     * get facility by ID
      * @param {string} id
      * @returns {Object|null}
      */
@@ -33,7 +40,7 @@ export const FacilityProvider = ({children}) => {
     };
 
     /**
-     * filter facilities by cat, capacity and price
+     * filter facilities by category, capacity and price
      * @param {Object} filters
      * @returns {Array}
      */
@@ -66,7 +73,7 @@ export const FacilityProvider = ({children}) => {
     };
 
     /** 
-     * search facilities by name/desc
+     * search facilities
      * @param {string} query
      * @returns {Array}
      */
@@ -86,8 +93,9 @@ export const FacilityProvider = ({children}) => {
             )
         );
     };
+
     /** 
-     * get facilities by category
+     * get category filters
      * @param {String} category
      * @returns {Array}
      */
@@ -96,7 +104,7 @@ export const FacilityProvider = ({children}) => {
     };
 
     /** 
-     * get available facilities
+     * get available features
      * @returns {Array}
      */
     const getAvailableFacilities = () => {
@@ -109,7 +117,7 @@ export const FacilityProvider = ({children}) => {
         error,
         getFacilityById,
         filterFacilities,
-        searchFacilities, // FIXED: Corrected spelling
+        searchFacilities,
         getFacilitiesByCategory,
         getAvailableFacilities
     };

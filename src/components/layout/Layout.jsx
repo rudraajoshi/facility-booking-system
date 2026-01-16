@@ -6,7 +6,7 @@ import Footer from './Footer';
 
 function Layout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const { currentUser, logout } = useContext(AuthContext);
+ const { user, logout, isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const toggleSidebar = () => {
@@ -48,16 +48,16 @@ function Layout() {
 
             {/* right */}
             <div className="flex items-center gap-3">
-              {currentUser ? (
+              {isAuthenticated ? (
                 <>
                   {/* user information */}
                   <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-neutral-100 rounded-lg">
                     <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold">
-                      {currentUser.name?.charAt(0).toUpperCase() || 'U'}
+                      {user?.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-semibold text-neutral-900">{currentUser.name}</p>
-                      <p className="text-xs text-neutral-600">{currentUser.email}</p>
+                      <p className="text-sm font-semibold text-neutral-900">{user?.name}</p>
+                      <p className="text-xs text-neutral-600">{user?.email}</p>
                     </div>
                   </div>
 

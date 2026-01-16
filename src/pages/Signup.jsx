@@ -71,35 +71,35 @@ function Signup() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
+  
+  if (!validateForm()) {
+    return;
+  }
+
+  setLoading(true);
+  setMessage('');
+
+  try {
+    const success = await signup({
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      password: formData.password
+    });
     
-    if (!validateForm()) {
-      return;
+    if (success) {
+      setMessage({ type: 'success', text: 'Account created successfully!' });
+      setTimeout(() => navigate('/facilities', { replace: true }), 1000);
+    } else {
+      setMessage({ type: 'error', text: 'Signup failed. Please try again.' });
     }
-
-    setLoading(true);
-    setMessage('');
-
-    // api call sleep
-    setTimeout(() => {
-      const result = signup({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password
-      });
-      
-      setLoading(false);
-
-      if (result.success) {
-        setMessage({ type: 'success', text: result.message });
-        // redirect
-        setTimeout(() => navigate('/facilities', { replace: true }), 1000);
-      } else {
-        setMessage({ type: 'error', text: result.message });
-      }
-    }, 500);
-  };
+  } catch (error) {
+    setMessage({ type: 'error', text: 'An error occurred. Please try again.' });
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50 flex items-center justify-center p-4">

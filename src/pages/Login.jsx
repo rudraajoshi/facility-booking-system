@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import Card from '../components/common/Card';
@@ -8,7 +8,7 @@ import Button from '../components/common/Button';
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useContext(AuthContext);
+  const { login, isAuthenticated } = useContext(AuthContext);
   
   const [formData, setFormData] = useState({
     email: '',
@@ -18,8 +18,13 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  // redirect access page
-  const from = location.state?.from?.pathname || '/facilities';
+  const from = location.state?.from?.pathname || '/';
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, from]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -27,7 +32,6 @@ function Login() {
       ...prev,
       [name]: value
     }));
-    // clear error
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -65,42 +69,55 @@ function Login() {
     setLoading(true);
     setMessage('');
 
-    // simulate API call delay
-    setTimeout(() => {
-      const result = login(formData.email, formData.password);
+    try {
+      const success = await login(formData.email, formData.password);
       
-      setLoading(false);
-
-      if (result.success) {
-        setMessage({ type: 'success', text: result.message });
-        // redirect page
-        setTimeout(() => navigate(from, { replace: true }), 500);
+      if (success) {
+        setMessage({ type: 'success', text: 'Login successful!' });
+        setTimeout(() => {
+          navigate(from, { replace: true });
+        }, 500);
       } else {
-        setMessage({ type: 'error', text: result.message });
+        setMessage({ type: 'error', text: 'Invalid email or password' });
       }
-    }, 500);
+    } catch (error) {
+      console.error('Login error:', error);
+      setMessage({ type: 'error', text: 'Login failed. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleGuestLogin = () => {
-    // guest user
-    const guestResult = login('guest@example.com', 'guest123');
-    
-    if (!guestResult.success) {
-      setMessage({ 
-        type: 'error', 
-        text: 'Guest account not available. Please sign up or contact support.' 
-      });
-      return;
-    }
+  const handleGuestLogin = async () => {
+    setLoading(true);
+    setMessage('');
 
-    setMessage({ type: 'success', text: 'Continuing as guest...' });
-    setTimeout(() => navigate(from, { replace: true }), 500);
+    try {
+      const success = await login('guest@example.com', 'guest123');
+      
+      if (success) {
+        setMessage({ type: 'success', text: 'Continuing as guest...' });
+        setTimeout(() => {
+          navigate(from, { replace: true });
+        }, 500);
+      } else {
+        setMessage({ 
+          type: 'error', 
+          text: 'Guest account not available. Please sign up first.' 
+        });
+      }
+    } catch (error) {
+      console.error('Guest login error:', error);
+      setMessage({ type: 'error', text: 'Login failed. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Lheader*/}
+        {/* header */}
         <div className="text-center mb-8 animate-fade-in-down">
           <Link to="/" className="inline-block">
             <h1 className="text-4xl font-display font-bold text-primary-600 mb-2">
@@ -110,14 +127,14 @@ function Login() {
           <p className="text-neutral-600">Sign in to access your bookings</p>
         </div>
 
-        {/* login*/}
+        {/* login card */}
         <Card className="shadow-xl border-2 border-primary-100 animate-fade-in-up">
           <Card.Body className="p-8">
             <h2 className="text-2xl font-bold text-neutral-900 mb-6 text-center">
               Welcome Back
             </h2>
 
-            {/* message display */}
+            {/* msg */}
             {message && (
               <div className={`mb-6 p-4 rounded-lg border-2 ${
                 message.type === 'success' 
@@ -137,7 +154,7 @@ function Login() {
               </div>
             )}
 
-            {/* login form */}
+            {/* form */}
             <form onSubmit={handleSubmit} className="space-y-5">
               <Input
                 label="Email Address"
@@ -163,7 +180,7 @@ function Login() {
                 className="border-2 focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
               />
 
-              {/* forgot pswd link */}
+              {/* pswd link */}
               <div className="text-right">
                 <Link 
                   to="/forgot-password" 
@@ -173,7 +190,7 @@ function Login() {
                 </Link>
               </div>
 
-              {/* login button */}
+              {/* btn */}
               <Button
                 type="submit"
                 variant="primary"
@@ -211,7 +228,7 @@ function Login() {
               </span>
             </Button>
 
-            {/* sign up */}
+            {/* sign up link */}
             <div className="mt-6 text-center">
               <p className="text-neutral-600">
                 Don't have an account?{' '}
@@ -226,7 +243,7 @@ function Login() {
           </Card.Body>
         </Card>
 
-        {/* home */}
+        {/* back to home */}
         <div className="mt-6 text-center">
           <Link 
             to="/" 

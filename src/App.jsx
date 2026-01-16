@@ -21,68 +21,47 @@ import CancellationPolicy from './pages/Cancellationpolicy';
 
 function App() {
   return (
-    <AuthProvider>
-      <FacilityProvider>
-        <BookingProvider>
-          <BrowserRouter>
-            <Routes>
-              {/* auth Routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
+      <AuthProvider>
+        <FacilityProvider>
+          <BookingProvider>
+            <BrowserRouter>
+              <Routes>
+                {/* auth Routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
 
-              {/* routes with layout */}
-              <Route path="/" element={<Layout />}>
-                <Route index element={<Home />} />
-                
-                {/* protected routes */}
-                <Route 
-                  path="facilities" 
-                  element={
-                    <ProtectedRoute>
-                      <Facilities />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="facilities/:id" 
-                  element={
-                    <ProtectedRoute>
-                      <FacilityDetails />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="booking/:facilityId" 
-                  element={
-                    <ProtectedRoute>
-                      <BookingPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="my-bookings" 
-                  element={
-                    <ProtectedRoute>
-                      <MyBookings />
-                    </ProtectedRoute>
-                  } 
-                />
+                {/* routes with layout */}
+                <Route path="/" element={<Layout />}>
+                  {/* no login routes*/}
+                  <Route index element={<Home />} />
+                  <Route path="facilities" element={<Facilities />} />
+                  <Route path="facilities/:id" element={<FacilityDetails />} />
+                  <Route path="my-bookings" element={<MyBookings />} /> {/* Now public */}
+                  
+                  {/* protected routes */}
+                  <Route 
+                    path="booking/:facilityId" 
+                    element={
+                      <ProtectedRoute>
+                        <BookingPage />
+                      </ProtectedRoute>
+                    } 
+                  />
 
-                {/* Support Pages - Public Routes */}
-                <Route path="help-center" element={<HelpCenter />} />
-                <Route path="contact-us" element={<ContactUs />} />
-                <Route path="faqs" element={<FAQs />} />
-                <Route path="cancellation-policy" element={<CancellationPolicy />} />
+                  {/* support */}
+                  <Route path="help-center" element={<HelpCenter />} />
+                  <Route path="contact-us" element={<ContactUs />} />
+                  <Route path="faqs" element={<FAQs />} />
+                  <Route path="cancellation-policy" element={<CancellationPolicy />} />
 
-                {/* error */}
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </BookingProvider>
-      </FacilityProvider>
-    </AuthProvider>
+                  {/* 404 error */}
+                  <Route path="*" element={<NotFound />} />
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </BookingProvider>
+        </FacilityProvider>
+      </AuthProvider>
   );
 }
 
