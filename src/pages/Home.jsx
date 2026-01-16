@@ -1,10 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
-import Button from '../components/common/Button';
-import Card from '../components/common/Card';
-import FacilityCard from '../components/facilities/FacilityCard';
-import Loading from '../components/common/Loading';
-import { useAuth } from '../hooks/useAuth';
-import { useFacilities } from '../hooks/useFacilities';
+import Button from '@/components/common/Button';
+import Card from '@/components/common/Card';
+import FacilityCard from '@/components/facilities/FacilityCard';
+import Loading from '@/components/common/Loading';
+import { useAuth } from '@/hooks/useAuth';
+import { useFacilities } from '@/hooks/useFacilities';
 
 function Home() {
   const navigate = useNavigate();

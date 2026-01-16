@@ -17,8 +17,7 @@ async function enableMocking() {
 
 enableMocking().then(() => {
   ReactDOM.createRoot(document.getElementById('root')).render(
-    <React.StrictMode>
+    // removed strict mode for duplicate calls
       <App />
-    </React.StrictMode>
   );
 });

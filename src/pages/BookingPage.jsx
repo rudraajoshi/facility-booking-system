@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import StepIndicator from '../components/booking/StepIndicator';
-import BookingSummary from '../components/booking/BookingSummary';
-import DateTimeStep from '../components/booking/DateTimeStep';
-import DetailsStep from '../components/booking/DetailsStep';
+import StepIndicator from '@/components/booking/StepIndicator';
+import BookingSummary from '@/components/booking/BookingSummary';
+import DateTimeStep from '@/components/booking/DateTimeStep';
+import DetailsStep from '@/components/booking/DetailsStep';
 import ConfirmationStep from '../components/booking/ConfirmationStep';
-import Loading from '../components/common/Loading';
-import { useFacilities } from '../hooks/useFacilities';
-import { useBookings } from '../hooks/useBookings';
+import Loading from '@/components/common/Loading';
+import { useFacilities } from '@/hooks/useFacilities';
+import { useBookings } from '@/hooks/useBookings';
 
 function BookingPage() {
   const { facilityId } = useParams();

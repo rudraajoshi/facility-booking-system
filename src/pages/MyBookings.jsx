@@ -1,13 +1,13 @@
 import { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FacilityContext } from '../context/FacilityContext';
-import { BookingContext } from '../context/BookingContext';
-import { AuthContext } from '../context/AuthContext';
-import Card from '../components/common/Card';
-import Badge from '../components/common/Badge';
-import Button from '../components/common/Button';
-import Modal from '../components/common/Modal';
-import Loading from '../components/common/Loading';
+import { FacilityContext } from '@/context/FacilityContext';
+import { BookingContext } from '@/context/BookingContext';
+import { AuthContext } from '@/context/AuthContext';
+import Card from '@/components/common/Card';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
+import Modal from '@/components/common/Modal';
+import Loading from '@/components/common/Loading';
 
 function MyBookings() {
   const navigate = useNavigate();

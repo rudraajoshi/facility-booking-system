@@ -8,10 +8,12 @@ export const BookingProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch bookings from API
+  // fetch bookings from API
   const fetchBookings = async (userEmail = null) => {
     try {
       setLoading(true);
+      setError(null);
+      
       const url = userEmail 
         ? `/api/bookings?userEmail=${userEmail}`
         : '/api/bookings';
@@ -30,15 +32,50 @@ export const BookingProvider = ({ children }) => {
     }
   };
 
-  // Load bookings on mount
   useEffect(() => {
-    // Get current user email from localStorage for initial load
-    const userEmail = localStorage.getItem('currentUserEmail');
-    fetchBookings(userEmail);
+    const controller = new AbortController();
+    let isMounted = true;
+
+    const loadBookings = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const userEmail = localStorage.getItem('currentUserEmail');
+        const url = userEmail 
+          ? `/api/bookings?userEmail=${userEmail}`
+          : '/api/bookings';
+        
+        const response = await fetch(url, {
+          signal: controller.signal
+        });
+        const result = await response.json();
+
+        if (isMounted && result.success) {
+          setBookings(result.data);
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError' && isMounted) {
+          setError('Failed to load bookings');
+          console.error('Error fetching bookings:', err);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadBookings();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
   }, []);
 
   /**
-   * Create a new booking
+   * create a new booking
    * @param {Object} bookingData
    * @returns {Promise<Object|null>}
    */
@@ -68,7 +105,7 @@ export const BookingProvider = ({ children }) => {
   };
 
   /**
-   * Get booking by ID
+   * get booking by ID
    * @param {string} bookingId
    * @returns {Object|null}
    */
@@ -77,7 +114,7 @@ export const BookingProvider = ({ children }) => {
   };
 
   /**
-   * Get bookings by facility ID
+   * get bookings by facility ID
    * @param {string} facilityId
    * @returns {Array}
    */
@@ -86,7 +123,7 @@ export const BookingProvider = ({ children }) => {
   };
 
   /**
-   * Get upcoming bookings
+   * get upcoming bookings
    * @returns {Array}
    */
   const getUpcomingBookings = () => {
@@ -98,7 +135,7 @@ export const BookingProvider = ({ children }) => {
   };
 
   /**
-   * Get past bookings
+   * get past bookings
    * @returns {Array}
    */
   const getPastBookings = () => {
@@ -110,7 +147,7 @@ export const BookingProvider = ({ children }) => {
   };
 
   /**
-   * Cancel a booking
+   * cancel a booking
    * @param {string} bookingId
    * @returns {Promise<boolean>}
    */
@@ -142,7 +179,7 @@ export const BookingProvider = ({ children }) => {
   };
 
   /**
-   * Update a booking
+   * update a booking
    * @param {string} bookingId
    * @param {Object} updates
    * @returns {Promise<boolean>}
@@ -175,7 +212,7 @@ export const BookingProvider = ({ children }) => {
   };
 
   /**
-   * Check if a time slot is available
+   * check if a time slot is available
    * @param {string} facilityId
    * @param {string} date
    * @param {string} timeSlot
@@ -203,7 +240,7 @@ export const BookingProvider = ({ children }) => {
     cancelBooking,
     updateBooking,
     isTimeSlotAvailable,
-    fetchBookings, // Expose for manual refresh
+    fetchBookings, 
   };
 
   return (

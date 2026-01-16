@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
-import { FacilityContext } from '../context/FacilityContext';
+import { FacilityContext } from '@/context/FacilityContext';
 
 export const useFacilities = () => {
   const context = useContext(FacilityContext);

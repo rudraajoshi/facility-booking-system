@@ -1,15 +1,13 @@
 import { http, HttpResponse } from 'msw';
-import { facilitiesData as facilities } from '../data/facilities';
+import { facilitiesData as facilities } from '@/data/facilities';
 
-// In-memory DB
+// in memory db
 let facilitiesData = [...facilities];
 let bookingsData = [];
 let usersData = [];
 let currentUser = null;
 
 export const handlers = [
-
-  // ==================== FACILITIES ====================
 
   http.get('/api/facilities', ({ request }) => {
     const url = new URL(request.url);
@@ -82,8 +80,6 @@ export const handlers = [
     });
   }),
 
-  // ==================== BOOKINGS ====================
-
   http.get('/api/bookings', () => {
     return HttpResponse.json({ success: true, data: bookingsData });
   }),
@@ -115,7 +111,6 @@ export const handlers = [
     return HttpResponse.json({ success: true });
   }),
 
-  // ==================== AUTH ====================
 
   http.post('/api/auth/signup', async ({ request }) => {
     const data = await request.json();

@@ -1,20 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import Badge from '../components/common/Badge';
-import Button from '../components/common/Button';
-import Card from '../components/common/Card';
-import Loading from '../components/common/Loading';
-import SearchBar from '../components/facilities/SearchBar';
-import FilterSection from '../components/facilities/FilterSection';
-import FacilityGrid from '../components/facilities/FacilityGrid';
-import { useFacilities } from '../hooks/useFacilities';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
+import Card from '@/components/common/Card';
+import Loading from '@/components/common/Loading';
+import SearchBar from '@/components/facilities/SearchBar';
+import FilterSection from '@/components/facilities/FilterSection';
+import FacilityGrid from '@/components/facilities/FacilityGrid';
 
 function Facilities() {
-  const { 
-    facilities, 
-    loading, 
-    error
-  } = useFacilities();
+  const [facilities, setFacilities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({ 
@@ -25,6 +22,85 @@ function Facilities() {
     amenities: [],
     sortBy: 'name-asc' 
   });
+
+  // api call for search and filter
+  useEffect(() => {
+    const controller = new AbortController();
+    let isMounted = true;
+
+    const fetchFacilities = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        //query parameters
+        const params = new URLSearchParams();
+        
+        if (searchTerm && searchTerm.trim()) {
+          params.append('search', searchTerm.trim());
+        }
+        
+        if (filters.category && filters.category !== 'all') {
+          params.append('category', filters.category);
+        }
+        
+        if (filters.minCapacity) {
+          params.append('minCapacity', filters.minCapacity);
+        }
+        
+        if (filters.maxPrice) {
+          params.append('maxPrice', filters.maxPrice);
+        }
+        
+        if (filters.status && filters.status !== 'all') {
+          params.append('status', filters.status);
+        }
+        
+        if (filters.amenities && filters.amenities.length > 0) {
+          params.append('amenities', filters.amenities.join(','));
+        }
+        
+        if (filters.sortBy) {
+          params.append('sortBy', filters.sortBy);
+        }
+
+        const queryString = params.toString();
+        const url = `/api/facilities${queryString ? `?${queryString}` : ''}`;
+
+        console.log('🔍 Fetching facilities with params:', queryString);
+
+        const response = await fetch(url, {
+          signal: controller.signal
+        });
+        
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to fetch facilities');
+        }
+
+        if (isMounted && result.success) {
+          setFacilities(result.data);
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError' && isMounted) {
+          setError(err.message);
+          console.error('Error fetching facilities:', err);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchFacilities();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [searchTerm, filters]); 
 
   const handleFilterChange = (key, value) => {
     setFilters({ ...filters, [key]: value });
@@ -46,49 +122,11 @@ function Facilities() {
     });
   };
 
-  // apply search, filters, and sorting
-  const getFilteredFacilities = () => {
+  const getSortedFacilities = () => {
     let results = [...facilities];
     
-    // apply search first
-    if (searchTerm && searchTerm.trim() !== '') {
-      const lowercaseQuery = searchTerm.toLowerCase().trim();
-      results = results.filter(facility =>
-        facility.name.toLowerCase().includes(lowercaseQuery) ||
-        facility.description.toLowerCase().includes(lowercaseQuery) ||
-        facility.location.toLowerCase().includes(lowercaseQuery) ||
-        facility.amenities.some(amenity =>
-          amenity.toLowerCase().includes(lowercaseQuery)
-        )
-      );
-    }
-    
-    // then apply filters to the search results
-    if (filters.category && filters.category !== 'all') {
-      results = results.filter(f => f.category === filters.category);
-    }
-    
-    if (filters.minCapacity) {
-      results = results.filter(f => f.capacity.max >= parseInt(filters.minCapacity));
-    }
-    
-    if (filters.maxPrice) {
-      results = results.filter(f => f.pricing.hourly <= parseInt(filters.maxPrice));
-    }
-    
-    if (filters.amenities && filters.amenities.length > 0) {
-      results = results.filter(f => 
-        filters.amenities.every(amenity => f.amenities.includes(amenity))
-      );
-    }
-    
-    if (filters.status && filters.status !== 'all') {
-      results = results.filter(f => f.status === filters.status);
-    }
-    
-    // finally apply sorting
     if (filters.sortBy) {
-      results = [...results].sort((a, b) => {
+      results = results.sort((a, b) => {
         switch (filters.sortBy) {
           case 'name-asc':
             return a.name.localeCompare(b.name);
@@ -111,7 +149,7 @@ function Facilities() {
     return results;
   };
 
-  const filteredFacilities = getFilteredFacilities();
+  const displayFacilities = getSortedFacilities();
 
   // error state
   if (error) {
@@ -164,7 +202,7 @@ function Facilities() {
         {/* results count */}
         <div className="mb-6">
           <p className="text-neutral-600">
-            Showing <span className="font-semibold text-neutral-800">{filteredFacilities.length}</span> {filteredFacilities.length === 1 ? 'facility' : 'facilities'}
+            Showing <span className="font-semibold text-neutral-800">{displayFacilities.length}</span> {displayFacilities.length === 1 ? 'facility' : 'facilities'}
             {searchTerm && (
               <span> for "<span className="font-semibold text-neutral-800">{searchTerm}</span>"</span>
             )}
@@ -179,12 +217,12 @@ function Facilities() {
         )}
 
         {/* facilities grid */}
-        {!loading && filteredFacilities.length > 0 && (
-          <FacilityGrid facilities={filteredFacilities} />
+        {!loading && displayFacilities.length > 0 && (
+          <FacilityGrid facilities={displayFacilities} />
         )}
 
         {/* empty state */}
-        {!loading && filteredFacilities.length === 0 && (
+        {!loading && displayFacilities.length === 0 && (
           <Card className="p-12 text-center">
             <div className="text-6xl mb-4">🔍</div>
             <h2 className="text-2xl font-bold text-neutral-800 mb-2">
