@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import Card from '../components/common/Card';
-import Input from '../components/common/Input';
+import Card from '@/components/common/Card';
+import Input from '@/components/common/Input';
 
 function FAQs() {
   const [searchQuery, setSearchQuery] = useState('');

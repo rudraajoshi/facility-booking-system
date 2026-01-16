@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Card from '../components/common/Card';
-import Input from '../components/common/Input';
+import Card from '@/components/common/Card';
+import Input from '@/components/common/Input';
 
 function HelpCenter() {
   const [searchQuery, setSearchQuery] = useState('');

@@ -1,184 +1,255 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
-/**
- * booking context for managing booking data globally
- */
 export const BookingContext = createContext();
 
-export const BookingProvider = ({children}) => {
-    const [bookings, setBookings] = useState([]);
-    const [loading, setLoading] = useState(true);
-    
-    // load bookings from localStorage
-    useEffect(() => {
-        try {
-            const storedBookings = localStorage.getItem('bookings');
-            if (storedBookings) {
-                setBookings(JSON.parse(storedBookings));
-            }
-            setLoading(false);
-        } catch (error) {
-            console.log('Error loading bookings:', error);
-            setLoading(false);
-        }
-    }, []);
-    
-    // save bookings to localStorage 
-    useEffect(() => {
-        if (!loading) {
-            try {
-                localStorage.setItem('bookings', JSON.stringify(bookings));
-            } catch (error) {
-                console.log('Error saving bookings:', error);
-            }
-        }
-    }, [bookings, loading]);
+export const BookingProvider = ({ children }) => {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    /**
-     * generate unique booking id
-     * @returns {string}
-     */
-    const generateBookingId = () => {
-        return `BK${Date.now()}${Math.random().toString(36).substr(2,9)}`.toUpperCase();
-    };
+  // fetch bookings from API
+  const fetchBookings = async (userEmail = null) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const url = userEmail 
+        ? `/api/bookings?userEmail=${userEmail}`
+        : '/api/bookings';
+      
+      const response = await fetch(url);
+      const result = await response.json();
 
-    /**
-     * add new booking
-     * @param {Object} bookingData
-     * @returns {Object}
-     */
-    const addBooking = (bookingData) => {
-        const newBooking = {
-            bookingId: generateBookingId(),
-            ...bookingData,
-            status: 'confirmed',
-            createdAt: new Date().toISOString()
-        };
-        setBookings(prev => [newBooking, ...prev]);
-        return newBooking;
-    };
-    
-    /**
-     * update existing booking
-     * @param {string} bookingId
-     * @param {Object} updates
-     * @returns {Object|null}
-     */
-    const updateBooking = (bookingId, updates) => {
-        let updatedBooking = null;
+      if (result.success) {
+        setBookings(result.data);
+      }
+    } catch (err) {
+      setError('Failed to load bookings');
+      console.error('Error fetching bookings:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let isMounted = true;
+
+    const loadBookings = async () => {
+      try {
+        setLoading(true);
+        setError(null);
         
-        setBookings(prev => {
-            const index = prev.findIndex(b => b.bookingId === bookingId);
-            if (index === -1) return prev;
-
-            const updated = [...prev];
-            updated[index] = { ...updated[index], ...updates };
-            updatedBooking = updated[index];
-            return updated; // FIXED: Added return statement
+        const userEmail = localStorage.getItem('currentUserEmail');
+        const url = userEmail 
+          ? `/api/bookings?userEmail=${userEmail}`
+          : '/api/bookings';
+        
+        const response = await fetch(url, {
+          signal: controller.signal
         });
-        
-        return updatedBooking;
+        const result = await response.json();
+
+        if (isMounted && result.success) {
+          setBookings(result.data);
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError' && isMounted) {
+          setError('Failed to load bookings');
+          console.error('Error fetching bookings:', err);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
 
-    /**
-     * cancel booking
-     * @param {string} bookingId
-     * @returns {boolean}
-     */
-    const cancelBooking = (bookingId) => {
-        const booking = bookings.find(b => b.bookingId === bookingId);
-        if (!booking) return false;
-        
-        updateBooking(bookingId, {status: 'cancelled'});
-        return true;
-    };
-    
-    /**
-     * get booking by id
-     * @param {string} bookingId
-     * @returns {Object|null}
-     */
-    const getBookingById = (bookingId) => {
-        return bookings.find(b => b.bookingId === bookingId) || null;
-    };
+    loadBookings();
 
-    /**
-     * get all bookings for particular user
-     * @param {string} userEmail
-     * @returns {Array}
-     */
-    const getUserBookings = (userEmail) => {
-        return bookings.filter(b => b.userEmail === userEmail);
+    return () => {
+      isMounted = false;
+      controller.abort();
     };
-    
-    /**
-     * get bookings for particular facility
-     * @param {string} facilityId
-     * @returns {Array}
-     */
-    const getFacilityBookings = (facilityId) => {
-        return bookings.filter(b => b.facilityId === facilityId);
-    };
+  }, []);
 
-    /**
-     * check if particular time slot is available
-     * @param {string} facilityId
-     * @param {string} date
-     * @param {string} timeSlot
-     * @returns {boolean}
-     */
-    const isTimeSlotAvailable = (facilityId, date, timeSlot) => {
-        return !bookings.some(b =>
-            b.facilityId === facilityId &&
-            b.date === date &&
-            b.timeSlot === timeSlot &&
-            b.status === 'confirmed'
+  /**
+   * create a new booking
+   * @param {Object} bookingData
+   * @returns {Promise<Object|null>}
+   */
+  const createBooking = async (bookingData) => {
+    try {
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookingData),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setBookings(prev => [...prev, result.data]);
+        return result.data;
+      } else {
+        console.error('Failed to create booking:', result.error);
+        return null;
+      }
+    } catch (err) {
+      console.error('Error creating booking:', err);
+      return null;
+    }
+  };
+
+  /**
+   * get booking by ID
+   * @param {string} bookingId
+   * @returns {Object|null}
+   */
+  const getBookingById = (bookingId) => {
+    return bookings.find(b => b.bookingId === bookingId) || null;
+  };
+
+  /**
+   * get bookings by facility ID
+   * @param {string} facilityId
+   * @returns {Array}
+   */
+  const getBookingsByFacility = (facilityId) => {
+    return bookings.filter(b => b.facilityId === facilityId);
+  };
+
+  /**
+   * get upcoming bookings
+   * @returns {Array}
+   */
+  const getUpcomingBookings = () => {
+    const now = new Date();
+    return bookings.filter(booking => {
+      const bookingDate = new Date(booking.date);
+      return bookingDate >= now && booking.status === 'confirmed';
+    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+  };
+
+  /**
+   * get past bookings
+   * @returns {Array}
+   */
+  const getPastBookings = () => {
+    const now = new Date();
+    return bookings.filter(booking => {
+      const bookingDate = new Date(booking.date);
+      return bookingDate < now || booking.status === 'completed';
+    }).sort((a, b) => new Date(b.date) - new Date(a.date));
+  };
+
+  /**
+   * cancel a booking
+   * @param {string} bookingId
+   * @returns {Promise<boolean>}
+   */
+  const cancelBooking = async (bookingId) => {
+    try {
+      const response = await fetch(`/api/bookings/${bookingId}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setBookings(prev =>
+          prev.map(b =>
+            b.bookingId === bookingId
+              ? { ...b, status: 'cancelled', updatedAt: new Date().toISOString() }
+              : b
+          )
         );
-    };
-    
-    /**
-     * get upcoming bookings
-     * @returns {Array}
-     */
-    const getUpcomingBookings = () => {
-        const today = new Date().toISOString().split('T')[0];
-        return bookings.filter(b =>
-            b.date >= today && b.status === 'confirmed'
-        ).sort((a, b) => new Date(a.date) - new Date(b.date));
-    };
+        return true;
+      } else {
+        console.error('Failed to cancel booking:', result.error);
+        return false;
+      }
+    } catch (err) {
+      console.error('Error cancelling booking:', err);
+      return false;
+    }
+  };
 
-    /**
-     * get past bookings
-     * @returns {Array}
-     */
-    const getPastBookings = () => {
-        const today = new Date().toISOString().split('T')[0];
-        return bookings.filter(b => b.date < today)
-        .sort((a, b) => new Date(b.date) - new Date(a.date));
-    };
+  /**
+   * update a booking
+   * @param {string} bookingId
+   * @param {Object} updates
+   * @returns {Promise<boolean>}
+   */
+  const updateBooking = async (bookingId, updates) => {
+    try {
+      const response = await fetch(`/api/bookings/${bookingId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
 
-    const value = {
-        bookings,
-        loading,
-        addBooking,
-        updateBooking,
-        cancelBooking,
-        getBookingById,
-        getUserBookings,
-        getFacilityBookings,
-        isTimeSlotAvailable,
-        getUpcomingBookings,
-        getPastBookings
-    };
-    
-    return (
-        <BookingContext.Provider value={value}>
-            {children}
-        </BookingContext.Provider>
+      const result = await response.json();
+
+      if (result.success) {
+        setBookings(prev =>
+          prev.map(b => (b.bookingId === bookingId ? result.data : b))
+        );
+        return true;
+      } else {
+        console.error('Failed to update booking:', result.error);
+        return false;
+      }
+    } catch (err) {
+      console.error('Error updating booking:', err);
+      return false;
+    }
+  };
+
+  /**
+   * check if a time slot is available
+   * @param {string} facilityId
+   * @param {string} date
+   * @param {string} timeSlot
+   * @returns {boolean}
+   */
+  const isTimeSlotAvailable = (facilityId, date, timeSlot) => {
+    return !bookings.some(
+      booking =>
+        booking.facilityId === facilityId &&
+        booking.date === date &&
+        booking.timeSlot === timeSlot &&
+        booking.status !== 'cancelled'
     );
+  };
+
+  const value = {
+    bookings,
+    loading,
+    error,
+    createBooking,
+    getBookingById,
+    getBookingsByFacility,
+    getUpcomingBookings,
+    getPastBookings,
+    cancelBooking,
+    updateBooking,
+    isTimeSlotAvailable,
+    fetchBookings, 
+  };
+
+  return (
+    <BookingContext.Provider value={value}>
+      {children}
+    </BookingContext.Provider>
+  );
 };
 
 BookingProvider.propTypes = {
-    children: PropTypes.node.isRequired
+  children: PropTypes.node.isRequired,
 };

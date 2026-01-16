@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import Card from '../components/common/Card';
-import Badge from '../components/common/Badge';
-import Button from '../components/common/Button';
-import Input from '../components/common/Input';
-import Loading from '../components/common/Loading';
-import { useFacilities } from '../hooks/useFacilities';
-import { useBookings } from '../hooks/useBookings';
-import FacilityImageGallery from '../components/facilities/FacilityImageGallery';
-import Calendar from '../components/booking/Calendar';
+import Card from '@/components/common/Card';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
+import Input from '@/components/common/Input';
+import Loading from '@/components/common/Loading';
+import { useFacilities } from '@/hooks/useFacilities';
+import { useBookings } from '@/hooks/useBookings';
+import FacilityImageGallery from '@/components/facilities/FacilityImageGallery';
+import Calendar from '@/components/booking/Calendar';
 
 function FacilityDetails() {
   const { id } = useParams();

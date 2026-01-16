@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import Card from '../components/common/Card';
-import Input from '../components/common/Input';
-import Button from '../components/common/Button';
+import Card from '@/components/common/Card';
+import Input from '@/components/common/Input';
+import Button from '@/components/common/Button';
 
 function ContactUs() {
   const [formData, setFormData] = useState({
