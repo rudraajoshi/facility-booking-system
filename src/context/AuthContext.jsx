@@ -8,17 +8,17 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Computed boolean - automatically updates when user changes
+  // automatically updates when user changes
   const isAuthenticated = user !== null;
 
-  // Debug: Log whenever user or isAuthenticated changes
+  // log whenever user or isAuthenticated changes
   useEffect(() => {
     console.log('🔄 Auth State Changed:');
     console.log('  user:', user);
     console.log('  isAuthenticated:', isAuthenticated);
   }, [user, isAuthenticated]);
 
-  // Check if user is logged in on mount
+  // check if user is logged in on mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -26,10 +26,10 @@ export const AuthProvider = ({ children }) => {
         console.log('🔍 Checking auth on mount, storedEmail:', storedEmail);
         
         if (storedEmail) {
-          // Try to get current user from API
+          // try to get current user from API
           const response = await fetch('/api/auth/me');
           
-          // Check if response is JSON
+          // check if response is JSON
           const contentType = response.headers.get('content-type');
           if (!contentType || !contentType.includes('application/json')) {
             console.warn('⚠️ MSW is not running - API returned HTML instead of JSON');
@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }) => {
             setUser(result.data);
           } else {
             console.log('❌ Auth check failed, clearing localStorage');
-            // If API says not authenticated, clear localStorage
+            // if API says not authenticated, clear localStorage
             localStorage.removeItem('currentUserEmail');
             localStorage.removeItem('currentUser');
           }
@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify(userData),
       });
 
-      // Check if response is JSON
+      // check if response is JSON
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         setError('MSW is not running. Please restart your dev server.');
@@ -131,7 +131,7 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ email, password }),
       });
 
-      // Check if response is JSON
+      // check if response is JSON
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         setError('MSW is not running. Please restart your dev server.');
@@ -166,7 +166,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * Logout user
+   * logout user
    */
   const logout = async () => {
     try {
@@ -189,7 +189,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * Get current user
+   * get current user
    * @returns {Object|null}
    */
   const getCurrentUser = () => {
@@ -197,7 +197,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * Update user profile
+   * update user profile
    * @param {Object} updates
    */
   const updateProfile = (updates) => {
