@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { FacilityContext } from '@/context/FacilityContext';
 
+// removed extra useeffect from here due to double api calls
 export const useFacilities = () => {
   const context = useContext(FacilityContext);
   
@@ -10,6 +11,7 @@ export const useFacilities = () => {
   
   return context;
 };
+
 
 export const useFacilitiesAPI = (filters = {}) => {
   const [facilities, setFacilities] = useState([]);
