@@ -18,7 +18,8 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const from = location.state?.from?.pathname || '/';
+  // Redirect to dashboard by default, or to the page they were trying to access
+  const from = location.state?.from?.pathname || '/dashboard';
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -73,7 +74,7 @@ function Login() {
       const success = await login(formData.email, formData.password);
       
       if (success) {
-        setMessage({ type: 'success', text: 'Login successful!' });
+        setMessage({ type: 'success', text: 'Login successful! Redirecting to dashboard...' });
         setTimeout(() => {
           navigate(from, { replace: true });
         }, 500);
@@ -96,7 +97,7 @@ function Login() {
       const success = await login('guest@example.com', 'guest123');
       
       if (success) {
-        setMessage({ type: 'success', text: 'Continuing as guest...' });
+        setMessage({ type: 'success', text: 'Continuing as guest... Redirecting to dashboard...' });
         setTimeout(() => {
           navigate(from, { replace: true });
         }, 500);

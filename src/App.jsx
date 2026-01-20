@@ -13,6 +13,7 @@ import MyBookings from './pages/MyBookings';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import NotFound from './pages/NotFound';
+import Dashboard from './pages/Dashboard';
 
 import HelpCenter from './pages/HelpCenter';
 import ContactUs from './pages/ContactUs';
@@ -39,6 +40,14 @@ function App() {
                   <Route path="my-bookings" element={<MyBookings />} /> {/* Now public */}
                   
                   {/* protected routes */}
+                  <Route 
+                    path="dashboard" 
+                    element={
+                      <ProtectedRoute>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
                   <Route 
                     path="booking/:facilityId" 
                     element={
