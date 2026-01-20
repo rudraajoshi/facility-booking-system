@@ -1,19 +1,21 @@
 import { Link, useNavigate } from 'react-router-dom';
-import Button from '../components/common/Button';
-import Card from '../components/common/Card';
-import FacilityCard from '../components/facilities/FacilityCard';
-import Loading from '../components/common/Loading';
-import { useAuth } from '../hooks/useAuth';
-import { useFacilities } from '../hooks/useFacilities';
+import Button from '@/components/common/Button';
+import Card from '@/components/common/Card';
+import FacilityCard from '@/components/facilities/FacilityCard';
+import Loading from '@/components/common/Loading';
+import { useAuth } from '@/hooks/useAuth';
+import { useFacilities } from '@/hooks/useFacilities';
 
 function Home() {
   const navigate = useNavigate();
-  const { isAuthenticated, currentUser } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { facilities, loading, error } = useFacilities();
   const featuredFacilities = facilities.slice(0, 6);
+  
   const handleBook = (facilityId) => {
     navigate(`/booking/${facilityId}`);
   };
+  
   const handleViewDetails = (facilityId) => {
     navigate(`/facilities/${facilityId}`);
   };
@@ -105,11 +107,11 @@ function Home() {
             Reserve conference rooms, meeting spaces, and more with ease
           </p>
           
-          {isAuthenticated() ? (
+          {isAuthenticated ? (
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up">
               <div className="bg-white/10 backdrop-blur-sm px-6 py-3 rounded-lg border border-white/20">
                 <p className="text-primary-100 dark:text-primary-200 text-sm">Welcome back,</p>
-                <p className="text-white font-semibold text-lg">{currentUser?.name}! 👋</p>
+                <p className="text-white font-semibold text-lg">{user?.name}! 👋</p>
               </div>
               <Link to="/facilities">
                 <Button 

@@ -226,4 +226,4 @@ export const facilitiesData =[
     }
 ];
 
-export default facilitiesData;
+export const facilities = facilitiesData;

@@ -1,19 +1,19 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import StepIndicator from '../components/booking/StepIndicator';
-import BookingSummary from '../components/booking/BookingSummary';
-import DateTimeStep from '../components/booking/DateTimeStep';
-import DetailsStep from '../components/booking/DetailsStep';
+import StepIndicator from '@/components/booking/StepIndicator';
+import BookingSummary from '@/components/booking/BookingSummary';
+import DateTimeStep from '@/components/booking/DateTimeStep';
+import DetailsStep from '@/components/booking/DetailsStep';
 import ConfirmationStep from '../components/booking/ConfirmationStep';
-import Loading from '../components/common/Loading';
-import { useFacilities } from '../hooks/useFacilities';
-import { useBookings } from '../hooks/useBookings';
+import Loading from '@/components/common/Loading';
+import { useFacilities } from '@/hooks/useFacilities';
+import { useBookings } from '@/hooks/useBookings';
 
 function BookingPage() {
   const { facilityId } = useParams();
   const navigate = useNavigate();
   const { getFacilityById, loading: facilitiesLoading } = useFacilities();
-  const { addBooking } = useBookings();
+  const { createBooking } = useBookings();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [bookingData, setBookingData] = useState({
@@ -71,19 +71,22 @@ function BookingPage() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    console.log('🔥 handleSubmit called!');
+    console.log('Booking data:', bookingData);
     
     // validate required fields
     if (!bookingData.date || !bookingData.startTime || !bookingData.purpose || 
         !bookingData.attendees || !bookingData.name || !bookingData.email || 
         !bookingData.phone) {
+      console.log('❌ Validation failed!');
       alert('Please fill in all required fields');
       return;
     }
 
-    // save user email to localStorage for session persistence
-    localStorage.setItem('currentUserEmail', bookingData.email);
+    console.log('✅ Validation passed!');
     
     // create booking object
     const newBooking = {
@@ -103,12 +106,17 @@ function BookingPage() {
       totalAmount: calculateTotal()
     };
 
-    // add booking to context => saved to localStorage
-    const createdBooking = addBooking(newBooking);
+    console.log('📦 Creating booking:', newBooking);
+
+    // Call createBooking (async)
+    const createdBooking = await createBooking(newBooking);
     
-    // Log for debugging
-    console.log('Booking submitted:', createdBooking);
-    console.log('User email saved:', bookingData.email);
+    if (!createdBooking) {
+      alert('Failed to create booking. Please try again.');
+      return;
+    }
+    
+    console.log('✅ Booking created:', createdBooking);
     
     // show success message
     alert(

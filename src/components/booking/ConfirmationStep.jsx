@@ -1,8 +1,22 @@
+import { useState } from 'react';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import PropTypes from 'prop-types';
 
 const ConfirmationStep = ({ bookingData, facility, handlePrevious, handleSubmit }) => {
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  const handleConfirmClick = (e) => {
+    e.preventDefault();
+  
+    if (!agreedToTerms) {
+      alert('Please agree to the terms and conditions to continue.');
+      return;
+    }
+
+    handleSubmit(e);
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -91,25 +105,36 @@ const ConfirmationStep = ({ bookingData, facility, handlePrevious, handleSubmit 
           {/* T&C */}
           <div className="bg-warning-50 border border-warning-200 rounded-lg p-4">
             <label className="flex items-start gap-3 cursor-pointer">
-              <input type="checkbox" required className="w-4 h-4 mt-1 text-primary-600 rounded" />
+              <input 
+                type="checkbox" 
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="w-4 h-4 mt-1 text-primary-600 rounded focus:ring-2 focus:ring-primary-500" 
+              />
               <span className="text-sm text-neutral-700">
-                I agree to the <a href="#" className="text-primary-600 hover:text-primary-700 font-medium">terms and conditions</a> and <a href="#" className="text-primary-600 hover:text-primary-700 font-medium">cancellation policy</a>
+                I agree to the <a href="/cancellation-policy" className="text-primary-600 hover:text-primary-700 font-medium">terms and conditions</a> and <a href="/cancellation-policy" className="text-primary-600 hover:text-primary-700 font-medium">cancellation policy</a>
               </span>
             </label>
           </div>
         </Card.Body>
       </Card>
+      
       <div className="flex justify-between gap-3">
         <Button variant="outline" onClick={handlePrevious}>
           Previous
         </Button>
-        <Button onClick={handleSubmit}>
+        <Button 
+          onClick={handleConfirmClick}
+          disabled={!agreedToTerms}
+          className={!agreedToTerms ? 'opacity-50 cursor-not-allowed' : ''}
+        >
           Confirm Booking
         </Button>
       </div>
     </div>
   );
 };
+
 ConfirmationStep.propTypes = {
   bookingData: PropTypes.object.isRequired,
   facility: PropTypes.object.isRequired,

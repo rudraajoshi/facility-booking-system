@@ -4,12 +4,14 @@ import { useAuth } from '../../hooks/useAuth';
 
 function Header() {
   const navigate = useNavigate();
-  const { currentUser, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
+
+  console.log('🎨 Header Render - isAuthenticated:', isAuthenticated, 'user:', user);
 
   return (
     <nav className="bg-white shadow-md border-b border-neutral-200 sticky top-0 z-50">
@@ -66,15 +68,15 @@ function Header() {
 
           {/* login/signup buttons or user info */}
           <div className="flex items-center gap-3">
-            {isAuthenticated() ? (
+            {isAuthenticated ? (
               <>
                 {/* user Info */}
                 <div className="flex items-center gap-3 px-4 py-2 bg-primary-50 rounded-lg border border-primary-200">
                   <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold">
-                    {currentUser?.name?.charAt(0).toUpperCase()}
+                    {user?.name?.charAt(0).toUpperCase()}
                   </div>
                   <span className="text-sm font-medium text-neutral-700">
-                    Hi, {currentUser?.name?.split(' ')[0]}
+                    Hi, {user?.name?.split(' ')[0]}
                   </span>
                 </div>
                 {/* logout button */}

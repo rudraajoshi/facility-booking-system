@@ -4,10 +4,9 @@ import { AuthContext } from '../context/AuthContext';
 import PropTypes from 'prop-types';
 
 const ProtectedRoute = ({ children }) => {
-  const { currentUser, loading } = useContext(AuthContext);
+  const { user, isAuthenticated, loading } = useContext(AuthContext);
   const location = useLocation();
 
-  // loading to check auth status
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
@@ -19,10 +18,10 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  // redirect to login if not authenticated
-  if (!currentUser) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
+
   return children;
 };
 
