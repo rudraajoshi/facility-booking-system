@@ -28,29 +28,57 @@ const saveToStorage = (key, data) => {
   }
 };
 
-// in memory db for persistence
-let facilitiesData = [...facilities];
-let bookingsData = loadFromStorage(STORAGE_KEYS.BOOKINGS, []);
-let usersData = loadFromStorage(STORAGE_KEYS.USERS, [
-  // default test users to test persistence
+// default users
+const DEFAULT_USERS = [
   {
     id: 'default-1',
     name: 'Test User',
     email: 'test@example.com',
-    password: 'test123'
+    password: 'test123',
+    role: 'user'
   },
   {
     id: 'default-2',
     name: 'Guest User',
     email: 'guest@example.com',
-    password: 'guest123'
+    password: 'guest123',
+    role: 'user'
+  },
+  {
+    id: 'admin-1',
+    name: 'Admin User',
+    email: 'admin@facility.com',
+    password: 'admin123',
+    role: 'admin'
   }
-]);
+];
+const initializeUsers = () => {
+  let users = loadFromStorage(STORAGE_KEYS.USERS, []);
+  if (users.length === 0) {
+    users = [...DEFAULT_USERS];
+  } else {
+    const adminExists = users.some(u => u.email === 'admin@facility.com');
+    if (!adminExists) {
+      const adminUser = DEFAULT_USERS.find(u => u.role === 'admin');
+      users.push(adminUser);
+      console.log('✅ Added missing admin user to storage');
+    }
+  }
+  
+  saveToStorage(STORAGE_KEYS.USERS, users);
+  return users;
+};
+
+// in memory db for persistence
+let facilitiesData = [...facilities];
+let bookingsData = loadFromStorage(STORAGE_KEYS.BOOKINGS, []);
+let usersData = initializeUsers(); 
 let currentUser = loadFromStorage(STORAGE_KEYS.CURRENT_USER, null);
 
-if (usersData.length > 0) {
-  saveToStorage(STORAGE_KEYS.USERS, usersData);
-}
+const adminUser = usersData.find(u => u.role === 'admin');
+console.log('🔑 Admin user in database:', adminUser ? 
+  `${adminUser.email} (password: ${adminUser.password})` : 
+  'NOT FOUND');
 
 // api handlers
 export const handlers = [
@@ -142,7 +170,7 @@ export const handlers = [
     };
     
     bookingsData.push(booking);
-    saveToStorage(STORAGE_KEYS.BOOKINGS, bookingsData); // ✅ Save to localStorage
+    saveToStorage(STORAGE_KEYS.BOOKINGS, bookingsData);
     
     return HttpResponse.json({ success: true, data: booking }, { status: 201 });
   }),
@@ -152,7 +180,7 @@ export const handlers = [
     if (index === -1) return HttpResponse.json({ error: 'Not found' }, { status: 404 });
 
     bookingsData[index] = { ...bookingsData[index], ...(await request.json()) };
-    saveToStorage(STORAGE_KEYS.BOOKINGS, bookingsData); // ✅ Save to localStorage
+    saveToStorage(STORAGE_KEYS.BOOKINGS, bookingsData);
     
     return HttpResponse.json({ success: true, data: bookingsData[index] });
   }),
@@ -161,7 +189,7 @@ export const handlers = [
     bookingsData = bookingsData.map(b =>
       b.id === params.id ? { ...b, status: 'cancelled' } : b
     );
-    saveToStorage(STORAGE_KEYS.BOOKINGS, bookingsData); // ✅ Save to localStorage
+    saveToStorage(STORAGE_KEYS.BOOKINGS, bookingsData);
     
     return HttpResponse.json({ success: true });
   }),
@@ -174,7 +202,11 @@ export const handlers = [
       return HttpResponse.json({ error: 'User exists' }, { status: 400 });
     }
 
-    const user = { id: crypto.randomUUID(), ...data };
+    const user = { 
+      id: crypto.randomUUID(), 
+      role: 'user', 
+      ...data 
+    };
     usersData.push(user);
     saveToStorage(STORAGE_KEYS.USERS, usersData);
 
@@ -185,27 +217,82 @@ export const handlers = [
     return HttpResponse.json({ success: true, data: safeUser });
   }),
 
+  // user login
   http.post('/api/auth/login', async ({ request }) => {
     const { email, password } = await request.json();
     usersData = loadFromStorage(STORAGE_KEYS.USERS, []);
-    const user = usersData.find(u => u.email === email && u.password === password);
-    if (!user) return HttpResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    
+    const user = usersData.find(u => 
+      u.email === email && 
+      u.password === password && 
+      u.role !== 'admin' 
+    );
+    
+    if (!user) {
+      return HttpResponse.json({ 
+        success: false,
+        error: 'Invalid credentials' 
+      }, { status: 401 });
+    }
+    
     currentUser = user;
-    saveToStorage(STORAGE_KEYS.CURRENT_USER, currentUser); 
+    saveToStorage(STORAGE_KEYS.CURRENT_USER, currentUser);
+    
     const { password: _, ...safeUser } = user;
     return HttpResponse.json({ success: true, data: safeUser });
   }),
+
+  // admin login
+  http.post('/api/auth/admin/login', async ({ request }) => {
+    const { email, password } = await request.json();
+
+    usersData = loadFromStorage(STORAGE_KEYS.USERS, []);
+    
+    console.log('🔍 Admin login attempt:', { email, password });
+    console.log('👥 Available users:', usersData.map(u => ({ 
+      email: u.email, 
+      role: u.role,
+      password: u.password 
+    })));
+    
+    const admin = usersData.find(u => 
+      u.email === email && 
+      u.password === password && 
+      u.role === 'admin'
+    );
+    
+    console.log('🔐 Admin found:', admin ? 'YES' : 'NO');
+    
+    if (!admin) {
+      return HttpResponse.json({ 
+        success: false,
+        error: 'Invalid admin credentials' 
+      }, { status: 401 });
+    }
+    
+    currentUser = admin;
+    saveToStorage(STORAGE_KEYS.CURRENT_USER, currentUser);
+    
+    const { password: _, ...safeAdmin } = admin;
+    return HttpResponse.json({ success: true, data: safeAdmin });
+  }),
+
   http.post('/api/auth/logout', () => {
     currentUser = null;
-    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER); 
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
     return HttpResponse.json({ success: true });
   }),
+
   http.get('/api/auth/me', () => {
     currentUser = loadFromStorage(STORAGE_KEYS.CURRENT_USER, null);
     
     if (!currentUser) {
-      return HttpResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      return HttpResponse.json({ 
+        success: false,
+        error: 'Not authenticated' 
+      }, { status: 401 });
     }
+    
     const { password, ...safeUser } = currentUser;
     return HttpResponse.json({ success: true, data: safeUser });
   })

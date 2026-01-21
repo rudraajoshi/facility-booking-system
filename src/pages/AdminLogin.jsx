@@ -1,15 +1,13 @@
 import { useState, useContext, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '@/context/AuthContext';
 import Card from '@/components/common/Card';
 import Input from '@/components/common/Input';
 import Button from '@/components/common/Button';
 
-function Login() {
+const AdminLogin = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { login, isAuthenticated } = useContext(AuthContext);
-  
+  const { login, isAuthenticated, isAdmin } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -18,20 +16,19 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const from = location.state?.from?.pathname || '/dashboard';
-
+  // redirect if already logged in as admin
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate(from, { replace: true });
+    if (isAuthenticated && isAdmin) {
+      navigate('/admin/dashboard');
     }
-  }, [isAuthenticated, navigate, from]);
+  }, [isAuthenticated, isAdmin, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
+    setFormData({
+      ...formData,
       [name]: value
-    }));
+    });
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -70,45 +67,19 @@ function Login() {
     setMessage('');
 
     try {
-      const success = await login(formData.email, formData.password);
+      const success = await login(formData.email, formData.password, 'admin');
       
       if (success) {
-        setMessage({ type: 'success', text: 'Login successful! Redirecting to dashboard...' });
+        setMessage({ type: 'success', text: 'Admin login successful! Redirecting to dashboard...' });
         setTimeout(() => {
-          navigate(from, { replace: true });
+          navigate('/admin/dashboard');
         }, 500);
       } else {
-        setMessage({ type: 'error', text: 'Invalid email or password' });
+        setMessage({ type: 'error', text: 'Invalid admin credentials' });
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      setMessage({ type: 'error', text: 'Login failed. Please try again.' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGuestLogin = async () => {
-    setLoading(true);
-    setMessage('');
-
-    try {
-      const success = await login('guest@example.com', 'guest123');
-      
-      if (success) {
-        setMessage({ type: 'success', text: 'Continuing as guest... Redirecting to dashboard...' });
-        setTimeout(() => {
-          navigate(from, { replace: true });
-        }, 500);
-      } else {
-        setMessage({ 
-          type: 'error', 
-          text: 'Guest account not available. Please sign up first.' 
-        });
-      }
-    } catch (error) {
-      console.error('Guest login error:', error);
-      setMessage({ type: 'error', text: 'Login failed. Please try again.' });
+    } catch (err) {
+      setMessage({ type: 'error', text: 'An error occurred during login. Please try again.' });
+      console.error('Login error:', err);
     } finally {
       setLoading(false);
     }
@@ -124,17 +95,26 @@ function Login() {
               Facility Booking
             </h1>
           </Link>
-          <p className="text-neutral-600">Sign in to access your bookings</p>
+          <p className="text-neutral-600">Admin Portal - Access Dashboard</p>
         </div>
 
         {/* login card */}
         <Card className="shadow-xl border-2 border-primary-100 animate-fade-in-up">
           <Card.Body className="p-8">
+            <div className="flex justify-center mb-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 text-primary-700 rounded-full">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span className="text-sm font-semibold">Admin Access</span>
+              </div>
+            </div>
+
             <h2 className="text-2xl font-bold text-neutral-900 mb-6 text-center">
               Welcome Back
             </h2>
 
-            {/* msg */}
+            {/* message */}
             {message && (
               <div className={`mb-6 p-4 rounded-lg border-2 ${
                 message.type === 'success' 
@@ -162,7 +142,7 @@ function Login() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="you@example.com"
+                placeholder="admin@facility.com"
                 error={errors.email}
                 required
                 className="border-2 focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
@@ -180,7 +160,7 @@ function Login() {
                 className="border-2 focus:border-primary-500 focus:ring-4 focus:ring-primary-100"
               />
 
-              {/* pswd link */}
+              {/* password link */}
               <div className="text-right">
                 <Link 
                   to="/forgot-password" 
@@ -190,7 +170,7 @@ function Login() {
                 </Link>
               </div>
 
-              {/* btn */}
+              {/* submit button */}
               <Button
                 type="submit"
                 variant="primary"
@@ -198,7 +178,7 @@ function Login() {
                 loading={loading}
                 className="w-full shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
               >
-                Sign In
+                Sign In as Admin
               </Button>
             </form>
 
@@ -208,51 +188,12 @@ function Login() {
                 <div className="w-full border-t border-neutral-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-neutral-500 font-medium">Or</span>
+                <span className="px-4 bg-white text-neutral-500 font-medium">Not an admin?</span>
               </div>
             </div>
 
-            {/* guest login */}
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              onClick={handleGuestLogin}
-              className="w-full group hover:bg-neutral-50"
-            >
-              <span className="flex items-center justify-center gap-2">
-                <svg className="w-5 h-5 text-neutral-400 group-hover:text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                Continue as Guest
-              </span>
-            </Button>
-
-            {/* sign up link */}
-            <div className="mt-6 text-center">
-              <p className="text-neutral-600">
-                Don't have an account?{' '}
-                <Link 
-                  to="/signup" 
-                  className="text-primary-600 hover:text-primary-700 font-semibold hover:underline"
-                >
-                  Sign up
-                </Link>
-              </p>
-            </div>
-
-            {/* divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-neutral-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-neutral-500 font-medium">Admin access?</span>
-              </div>
-            </div>
-
-            {/* admin login */}
-            <Link to="/admin">
+            {/* customer login button */}
+            <Link to="/login">
               <Button
                 type="button"
                 variant="outline"
@@ -261,15 +202,14 @@ function Login() {
               >
                 <span className="flex items-center justify-center gap-2">
                   <svg className="w-5 h-5 text-neutral-400 group-hover:text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  Admin? Sign in here
+                  Customer Login
                 </span>
               </Button>
             </Link>
           </Card.Body>
         </Card>
-
         {/* back to home */}
         <div className="mt-6 text-center">
           <Link 
@@ -285,6 +225,6 @@ function Login() {
       </div>
     </div>
   );
-}
+};
 
-export default Login;
+export default AdminLogin;
