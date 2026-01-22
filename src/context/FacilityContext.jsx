@@ -9,26 +9,34 @@ export const FacilityProvider = ({children}) => {
     const [error, setError] = useState(null);
 
     // fetch facilities from MSW API
-    useEffect(() => {
-        const fetchFacilities = async () => {
-            try {
-                setLoading(true);
-                const response = await fetch('/api/facilities');
-                const result = await response.json();
-                
-                if (result.success) {
-                    setFacilities(result.data);
-                }
-            } catch (error) {
-                setError('Failed to load facilities');
-                console.error(error);
-            } finally {
-                setLoading(false);
+    const fetchFacilities = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch('/api/facilities');
+            const result = await response.json();
+            
+            if (result.success) {
+                setFacilities(result.data);
             }
-        };
-        
+        } catch (error) {
+            setError('Failed to load facilities');
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchFacilities();
     }, []);
+
+    /** 
+     * refresh facilities from API
+     * @returns {Promise}
+     */
+    const refreshFacilities = () => {
+        return fetchFacilities();
+    };
 
     /** 
      * get facility by ID
@@ -113,8 +121,10 @@ export const FacilityProvider = ({children}) => {
 
     const value = {
         facilities,
+        setFacilities,
         loading,
         error,
+        refreshFacilities,
         getFacilityById,
         filterFacilities,
         searchFacilities,

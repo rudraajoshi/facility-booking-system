@@ -4,6 +4,7 @@ import { FacilityProvider } from '@/context/FacilityContext';
 import { BookingProvider } from '@/context/BookingContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/layout/Layout';
+import AdminLayout from '@/components/layout/AdminLayout';
 
 import Home from '@/pages/Home';
 import Facilities from '@/pages/Facilities';
@@ -16,6 +17,7 @@ import NotFound from '@/pages/NotFound';
 import Dashboard from '@/pages/Dashboard';
 import AdminLogin from '@/pages/AdminLogin';
 import AdminDashboard from '@/pages/AdminDashboard';
+import AdminFacilities from '@/pages/AdminFacilities';
 
 import HelpCenter from '@/pages/HelpCenter';
 import ContactUs from '@/pages/ContactUs';
@@ -29,20 +31,23 @@ function App() {
           <BookingProvider>
             <BrowserRouter>
               <Routes>
+                {/* auth routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
 
                 <Route path="/admin" element={<AdminLogin />} />
-                
-                {/* admin dashboard */}
+
                 <Route 
-                  path="/admin/dashboard" 
+                  path="/admin" 
                   element={
                     <ProtectedRoute requireAdmin>
-                      <AdminDashboard />
+                      <AdminLayout />
                     </ProtectedRoute>
-                  } 
-                />
+                  }
+                >
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="facilities" element={<AdminFacilities />} />
+                </Route>
 
                 <Route path="/" element={<Layout />}>
                   {/* public routes */}
