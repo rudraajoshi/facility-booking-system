@@ -10,20 +10,23 @@ export const AuthProvider = ({ children }) => {
 
   // automatically updates when user changes
   const isAuthenticated = user !== null;
+  const isAdmin = user?.role === 'admin';
 
   // log whenever user or isAuthenticated changes
   useEffect(() => {
     console.log('🔄 Auth State Changed:');
     console.log('  user:', user);
     console.log('  isAuthenticated:', isAuthenticated);
-  }, [user, isAuthenticated]);
+    console.log('  isAdmin:', isAdmin);
+  }, [user, isAuthenticated, isAdmin]);
 
   // check if user is logged in on mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const storedEmail = localStorage.getItem('currentUserEmail');
-        console.log('🔍 Checking auth on mount, storedEmail:', storedEmail);
+        const storedRole = localStorage.getItem('currentUserRole');
+        console.log('🔍 Checking auth on mount, storedEmail:', storedEmail, 'storedRole:', storedRole);
         
         if (storedEmail) {
           // try to get current user from API
@@ -48,6 +51,7 @@ export const AuthProvider = ({ children }) => {
             // if API says not authenticated, clear localStorage
             localStorage.removeItem('currentUserEmail');
             localStorage.removeItem('currentUser');
+            localStorage.removeItem('currentUserRole');
           }
         } else {
           console.log('ℹ️ No stored email found');
@@ -64,8 +68,8 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   /**
-   * Register a new user
-   * @param {Object} userData - User registration data
+   * register a new user
+   * @param {Object} userData 
    * @returns {Promise<boolean>}
    */
   const signup = async (userData) => {
@@ -96,6 +100,7 @@ export const AuthProvider = ({ children }) => {
         setUser(result.data);
         localStorage.setItem('currentUserEmail', result.data.email);
         localStorage.setItem('currentUser', JSON.stringify(result.data));
+        localStorage.setItem('currentUserRole', result.data.role || 'user');
         return true;
       } else {
         setError(result.error);
@@ -111,19 +116,22 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * Login user
+   * login user (regular or admin)
    * @param {string} email
    * @param {string} password
+   * @param {string} role 
    * @returns {Promise<boolean>}
    */
-  const login = async (email, password) => {
+  const login = async (email, password, role = 'user') => {
     try {
       setError(null);
       setLoading(true);
 
-      console.log('🔐 Attempting login for:', email);
+      console.log('🔐 Attempting login for:', email, 'as', role);
 
-      const response = await fetch('/api/auth/login', {
+      const endpoint = role === 'admin' ? '/api/auth/admin/login' : '/api/auth/login';
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -147,6 +155,7 @@ export const AuthProvider = ({ children }) => {
         setUser(result.data);
         localStorage.setItem('currentUserEmail', result.data.email);
         localStorage.setItem('currentUser', JSON.stringify(result.data));
+        localStorage.setItem('currentUserRole', result.data.role || 'user');
         console.log('✅ User state and localStorage updated');
         console.log('✅ isAuthenticated should now be:', result.data !== null);
         return true;
@@ -178,6 +187,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       localStorage.removeItem('currentUserEmail');
       localStorage.removeItem('currentUser');
+      localStorage.removeItem('currentUserRole');
       console.log('✅ Logout complete');
     } catch (err) {
       console.error('Logout error:', err);
@@ -185,6 +195,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       localStorage.removeItem('currentUserEmail');
       localStorage.removeItem('currentUser');
+      localStorage.removeItem('currentUserRole');
     }
   };
 
@@ -214,11 +225,17 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     isAuthenticated,
+    isAdmin,
     getCurrentUser,
     updateProfile,
   };
 
-  console.log('🎯 AuthContext providing value:', { user: user?.name, isAuthenticated, loading });
+  console.log('🎯 AuthContext providing value:', { 
+    user: user?.name, 
+    isAuthenticated, 
+    isAdmin,
+    loading 
+  });
 
   return (
     <AuthContext.Provider value={value}>

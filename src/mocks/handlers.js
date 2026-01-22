@@ -1,12 +1,86 @@
 import { http, HttpResponse } from 'msw';
 import { facilitiesData as facilities } from '@/data/facilities';
 
-// in memory db
-let facilitiesData = [...facilities];
-let bookingsData = [];
-let usersData = [];
-let currentUser = null;
+// persistence
+const STORAGE_KEYS = {
+  USERS: 'msw_users',
+  BOOKINGS: 'msw_bookings',
+  CURRENT_USER: 'msw_current_user'
+};
 
+// load data
+const loadFromStorage = (key, defaultValue = []) => {
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : defaultValue;
+  } catch (error) {
+    console.error(`Error loading ${key}:`, error);
+    return defaultValue;
+  }
+};
+
+// save data
+const saveToStorage = (key, data) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (error) {
+    console.error(`Error saving ${key}:`, error);
+  }
+};
+
+// default users
+const DEFAULT_USERS = [
+  {
+    id: 'default-1',
+    name: 'Test User',
+    email: 'test@example.com',
+    password: 'test123',
+    role: 'user'
+  },
+  {
+    id: 'default-2',
+    name: 'Guest User',
+    email: 'guest@example.com',
+    password: 'guest123',
+    role: 'user'
+  },
+  {
+    id: 'admin-1',
+    name: 'Admin User',
+    email: 'admin@facility.com',
+    password: 'admin123',
+    role: 'admin'
+  }
+];
+const initializeUsers = () => {
+  let users = loadFromStorage(STORAGE_KEYS.USERS, []);
+  if (users.length === 0) {
+    users = [...DEFAULT_USERS];
+  } else {
+    const adminExists = users.some(u => u.email === 'admin@facility.com');
+    if (!adminExists) {
+      const adminUser = DEFAULT_USERS.find(u => u.role === 'admin');
+      users.push(adminUser);
+      console.log('✅ Added missing admin user to storage');
+    }
+  }
+  
+  saveToStorage(STORAGE_KEYS.USERS, users);
+  return users;
+};
+
+// in memory db for persistence
+let facilitiesData = [...facilities];
+let bookingsData = loadFromStorage(STORAGE_KEYS.BOOKINGS, []);
+let usersData = initializeUsers(); 
+let currentUser = loadFromStorage(STORAGE_KEYS.CURRENT_USER, null);
+
+const adminUser = usersData.find(u => u.role === 'admin');
+console.log('🔑 Admin user in database:', adminUser ? 
+  `${adminUser.email} (password: ${adminUser.password})` : 
+  'NOT FOUND');
+
+// api handlers
 export const handlers = [
 
   http.get('/api/facilities', ({ request }) => {
@@ -81,6 +155,8 @@ export const handlers = [
   }),
 
   http.get('/api/bookings', () => {
+    // Reload from storage to get latest data
+    bookingsData = loadFromStorage(STORAGE_KEYS.BOOKINGS, []);
     return HttpResponse.json({ success: true, data: bookingsData });
   }),
 
@@ -92,7 +168,10 @@ export const handlers = [
       ...data,
       createdAt: new Date().toISOString()
     };
+    
     bookingsData.push(booking);
+    saveToStorage(STORAGE_KEYS.BOOKINGS, bookingsData);
+    
     return HttpResponse.json({ success: true, data: booking }, { status: 201 });
   }),
 
@@ -101,6 +180,8 @@ export const handlers = [
     if (index === -1) return HttpResponse.json({ error: 'Not found' }, { status: 404 });
 
     bookingsData[index] = { ...bookingsData[index], ...(await request.json()) };
+    saveToStorage(STORAGE_KEYS.BOOKINGS, bookingsData);
+    
     return HttpResponse.json({ success: true, data: bookingsData[index] });
   }),
 
@@ -108,45 +189,110 @@ export const handlers = [
     bookingsData = bookingsData.map(b =>
       b.id === params.id ? { ...b, status: 'cancelled' } : b
     );
+    saveToStorage(STORAGE_KEYS.BOOKINGS, bookingsData);
+    
     return HttpResponse.json({ success: true });
   }),
 
-
   http.post('/api/auth/signup', async ({ request }) => {
     const data = await request.json();
+    usersData = loadFromStorage(STORAGE_KEYS.USERS, []);
 
     if (usersData.find(u => u.email === data.email)) {
       return HttpResponse.json({ error: 'User exists' }, { status: 400 });
     }
 
-    const user = { id: crypto.randomUUID(), ...data };
+    const user = { 
+      id: crypto.randomUUID(), 
+      role: 'user', 
+      ...data 
+    };
     usersData.push(user);
+    saveToStorage(STORAGE_KEYS.USERS, usersData);
+
     currentUser = user;
+    saveToStorage(STORAGE_KEYS.CURRENT_USER, currentUser);
 
     const { password, ...safeUser } = user;
     return HttpResponse.json({ success: true, data: safeUser });
   }),
 
+  // user login
   http.post('/api/auth/login', async ({ request }) => {
     const { email, password } = await request.json();
-    const user = usersData.find(u => u.email === email && u.password === password);
-
-    if (!user) return HttpResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-
+    usersData = loadFromStorage(STORAGE_KEYS.USERS, []);
+    
+    const user = usersData.find(u => 
+      u.email === email && 
+      u.password === password && 
+      u.role !== 'admin' 
+    );
+    
+    if (!user) {
+      return HttpResponse.json({ 
+        success: false,
+        error: 'Invalid credentials' 
+      }, { status: 401 });
+    }
+    
     currentUser = user;
+    saveToStorage(STORAGE_KEYS.CURRENT_USER, currentUser);
+    
     const { password: _, ...safeUser } = user;
     return HttpResponse.json({ success: true, data: safeUser });
   }),
 
+  // admin login
+  http.post('/api/auth/admin/login', async ({ request }) => {
+    const { email, password } = await request.json();
+
+    usersData = loadFromStorage(STORAGE_KEYS.USERS, []);
+    
+    console.log('🔍 Admin login attempt:', { email, password });
+    console.log('👥 Available users:', usersData.map(u => ({ 
+      email: u.email, 
+      role: u.role,
+      password: u.password 
+    })));
+    
+    const admin = usersData.find(u => 
+      u.email === email && 
+      u.password === password && 
+      u.role === 'admin'
+    );
+    
+    console.log('🔐 Admin found:', admin ? 'YES' : 'NO');
+    
+    if (!admin) {
+      return HttpResponse.json({ 
+        success: false,
+        error: 'Invalid admin credentials' 
+      }, { status: 401 });
+    }
+    
+    currentUser = admin;
+    saveToStorage(STORAGE_KEYS.CURRENT_USER, currentUser);
+    
+    const { password: _, ...safeAdmin } = admin;
+    return HttpResponse.json({ success: true, data: safeAdmin });
+  }),
+
   http.post('/api/auth/logout', () => {
     currentUser = null;
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
     return HttpResponse.json({ success: true });
   }),
 
   http.get('/api/auth/me', () => {
+    currentUser = loadFromStorage(STORAGE_KEYS.CURRENT_USER, null);
+    
     if (!currentUser) {
-      return HttpResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      return HttpResponse.json({ 
+        success: false,
+        error: 'Not authenticated' 
+      }, { status: 401 });
     }
+    
     const { password, ...safeUser } = currentUser;
     return HttpResponse.json({ success: true, data: safeUser });
   })
