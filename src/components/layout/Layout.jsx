@@ -1,13 +1,15 @@
 import { Outlet, Link, NavLink, useNavigate } from 'react-router-dom';
-import { useState, useContext } from 'react';
+import { useState, useContext, useRef, useEffect } from 'react';
 import { AuthContext } from "@/context/AuthContext";
 import Button from '@/components/common/Button';
 import Footer from './Footer';
 
 function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showLoginDropdown, setShowLoginDropdown] = useState(false);
   const { user, logout, isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
+  const dropdownRef = useRef(null);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -18,6 +20,17 @@ function Layout() {
     navigate('/');
     setIsMobileMenuOpen(false);
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowLoginDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
@@ -171,11 +184,51 @@ function Layout() {
                 </>
               ) : (
                 <>
-                  <Link to="/login" className="hidden lg:block">
-                    <Button variant="ghost" size="sm">
+                  {/* login dropdown */}
+                  <div className="hidden lg:block relative" ref={dropdownRef}>
+                    <button
+                      onClick={() => setShowLoginDropdown(!showLoginDropdown)}
+                      className="px-4 py-2 rounded-lg text-neutral-600 hover:text-primary-600 hover:bg-neutral-50 transition-all flex items-center gap-2 font-medium"
+                    >
                       Login
-                    </Button>
-                  </Link>
+                      <svg 
+                        className={`w-4 h-4 transition-transform duration-200 ${showLoginDropdown ? 'rotate-180' : ''}`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {/* dropdown */}
+                    {showLoginDropdown && (
+                      <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-xl border border-neutral-200 py-2 z-[100]">
+                        <Link
+                          to="/login"
+                          className="block px-4 py-3 text-sm text-neutral-700 hover:bg-primary-50 hover:text-primary-600 transition-colors items-center gap-3"
+                          onClick={() => setShowLoginDropdown(false)}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <span className="font-medium">Customer Login</span>
+                        </Link>
+                        <div className="border-t border-neutral-100 my-1"></div>
+                        <Link
+                          to="/admin"
+                          className="block px-4 py-3 text-sm text-neutral-700 hover:bg-primary-50 hover:text-primary-600 transition-colors items-center gap-3"
+                          onClick={() => setShowLoginDropdown(false)}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                          <span className="font-medium">Admin Login</span>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+
                   <Link to="/signup" className="hidden lg:block">
                     <Button variant="primary" size="sm">
                       Sign Up
@@ -305,9 +358,25 @@ function Layout() {
                 </div>
               ) : (
                 <div className="pt-4 mt-4 border-t border-neutral-200 space-y-2">
+                  {/* mobile login */}
                   <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="block">
-                    <Button variant="ghost" size="sm" className="w-full justify-center">
-                      Login
+                    <Button variant="ghost" size="sm" className="w-full justify-start">
+                      <span className="flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        Customer Login
+                      </span>
+                    </Button>
+                  </Link>
+                  <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className="block">
+                    <Button variant="ghost" size="sm" className="w-full justify-start">
+                      <span className="flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        Admin Login
+                      </span>
                     </Button>
                   </Link>
                   <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)} className="block">

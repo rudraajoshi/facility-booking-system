@@ -5,7 +5,7 @@ import { BookingContext } from '@/context/BookingContext';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { user, logout, isAdmin } = useContext(AuthContext);
+  const { user, isAdmin } = useContext(AuthContext);
   const { bookings } = useContext(BookingContext);
   
   const [filter, setFilter] = useState('all');
@@ -17,11 +17,6 @@ const AdminDashboard = () => {
       navigate('/admin');
     }
   }, [isAdmin, navigate]);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/admin');
-  };
 
   // filter bookings
   const filteredBookings = bookings.filter(booking => {
@@ -45,27 +40,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-neutral-900">Admin Dashboard</h1>
-              <p className="text-sm text-neutral-600 mt-1">Manage all facility bookings</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-neutral-700">Welcome, {user?.name || 'Admin'}</span>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-error-600 text-white rounded-md hover:bg-error-700 transition-colors"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* statistics cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">

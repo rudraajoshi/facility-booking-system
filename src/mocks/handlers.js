@@ -1,10 +1,11 @@
 import { http, HttpResponse } from 'msw';
-import { facilitiesData as facilities } from '@/data/facilities';
+import { facilitiesData as initialFacilities } from '@/data/facilities';
 
-// persistence
+// persistence keys
 const STORAGE_KEYS = {
   USERS: 'msw_users',
   BOOKINGS: 'msw_bookings',
+  FACILITIES: 'msw_facilities',
   CURRENT_USER: 'msw_current_user'
 };
 
@@ -52,6 +53,7 @@ const DEFAULT_USERS = [
     role: 'admin'
   }
 ];
+
 const initializeUsers = () => {
   let users = loadFromStorage(STORAGE_KEYS.USERS, []);
   if (users.length === 0) {
@@ -69,8 +71,18 @@ const initializeUsers = () => {
   return users;
 };
 
+const initializeFacilities = () => {
+  let facilities = loadFromStorage(STORAGE_KEYS.FACILITIES, []);
+  if (facilities.length === 0) {
+    facilities = [...initialFacilities];
+    saveToStorage(STORAGE_KEYS.FACILITIES, facilities);
+    console.log('✅ Initialized facilities in storage');
+  }
+  return facilities;
+};
+
 // in memory db for persistence
-let facilitiesData = [...facilities];
+let facilitiesData = initializeFacilities();
 let bookingsData = loadFromStorage(STORAGE_KEYS.BOOKINGS, []);
 let usersData = initializeUsers(); 
 let currentUser = loadFromStorage(STORAGE_KEYS.CURRENT_USER, null);
@@ -84,6 +96,8 @@ console.log('🔑 Admin user in database:', adminUser ?
 export const handlers = [
 
   http.get('/api/facilities', ({ request }) => {
+    facilitiesData = loadFromStorage(STORAGE_KEYS.FACILITIES, initialFacilities);
+    
     const url = new URL(request.url);
     const type = url.searchParams.get('type');
     const capacity = url.searchParams.get('capacity');
@@ -92,11 +106,11 @@ export const handlers = [
     let result = [...facilitiesData];
 
     if (type && type !== 'all') {
-      result = result.filter(f => f.type.toLowerCase() === type.toLowerCase());
+      result = result.filter(f => f.type?.toLowerCase() === type.toLowerCase() || f.category?.toLowerCase() === type.toLowerCase());
     }
 
     if (capacity) {
-      result = result.filter(f => f.capacity >= parseInt(capacity));
+      result = result.filter(f => (f.capacity?.max || f.capacity) >= parseInt(capacity));
     }
 
     if (search) {
@@ -112,28 +126,48 @@ export const handlers = [
   }),
 
   http.get('/api/facilities/:id', ({ params }) => {
+    facilitiesData = loadFromStorage(STORAGE_KEYS.FACILITIES, initialFacilities);
     const facility = facilitiesData.find(f => f.id === params.id);
     if (!facility) return HttpResponse.json({ error: 'Not found' }, { status: 404 });
     return HttpResponse.json({ success: true, data: facility });
   }),
 
   http.post('/api/facilities', async ({ request }) => {
+    facilitiesData = loadFromStorage(STORAGE_KEYS.FACILITIES, initialFacilities);
     const data = await request.json();
-    const newFacility = { id: crypto.randomUUID(), ...data };
+    const newFacility = { 
+      id: crypto.randomUUID(), 
+      ...data,
+      createdAt: new Date().toISOString()
+    };
     facilitiesData.push(newFacility);
+    saveToStorage(STORAGE_KEYS.FACILITIES, facilitiesData);
+    console.log('✅ Facility added:', newFacility.name);
     return HttpResponse.json({ success: true, data: newFacility }, { status: 201 });
   }),
 
   http.put('/api/facilities/:id', async ({ params, request }) => {
+    facilitiesData = loadFromStorage(STORAGE_KEYS.FACILITIES, initialFacilities);
     const index = facilitiesData.findIndex(f => f.id === params.id);
     if (index === -1) return HttpResponse.json({ error: 'Not found' }, { status: 404 });
 
-    facilitiesData[index] = { ...facilitiesData[index], ...(await request.json()) };
+    const updateData = await request.json();
+    facilitiesData[index] = { 
+      ...facilitiesData[index], 
+      ...updateData,
+      updatedAt: new Date().toISOString()
+    };
+    saveToStorage(STORAGE_KEYS.FACILITIES, facilitiesData);
+    console.log('✅ Facility updated:', facilitiesData[index].name);
     return HttpResponse.json({ success: true, data: facilitiesData[index] });
   }),
 
   http.delete('/api/facilities/:id', ({ params }) => {
+    facilitiesData = loadFromStorage(STORAGE_KEYS.FACILITIES, initialFacilities);
+    const facility = facilitiesData.find(f => f.id === params.id);
     facilitiesData = facilitiesData.filter(f => f.id !== params.id);
+    saveToStorage(STORAGE_KEYS.FACILITIES, facilitiesData);
+    console.log('✅ Facility deleted:', facility?.name || params.id);
     return HttpResponse.json({ success: true });
   }),
 
@@ -155,7 +189,6 @@ export const handlers = [
   }),
 
   http.get('/api/bookings', () => {
-    // Reload from storage to get latest data
     bookingsData = loadFromStorage(STORAGE_KEYS.BOOKINGS, []);
     return HttpResponse.json({ success: true, data: bookingsData });
   }),
@@ -217,7 +250,6 @@ export const handlers = [
     return HttpResponse.json({ success: true, data: safeUser });
   }),
 
-  // user login
   http.post('/api/auth/login', async ({ request }) => {
     const { email, password } = await request.json();
     usersData = loadFromStorage(STORAGE_KEYS.USERS, []);
@@ -242,10 +274,8 @@ export const handlers = [
     return HttpResponse.json({ success: true, data: safeUser });
   }),
 
-  // admin login
   http.post('/api/auth/admin/login', async ({ request }) => {
     const { email, password } = await request.json();
-
     usersData = loadFromStorage(STORAGE_KEYS.USERS, []);
     
     console.log('🔍 Admin login attempt:', { email, password });

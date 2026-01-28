@@ -3,6 +3,7 @@ import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import FacilityCard from '@/components/facilities/FacilityCard';
 import Loading from '@/components/common/Loading';
+import ExploreByCategorySection from '@/components/facilities/ExploreByCategorySection';
 import { useAuth } from '@/hooks/useAuth';
 import { useFacilities } from '@/hooks/useFacilities';
 
@@ -209,7 +210,7 @@ function Home() {
         </div>
       </section>
 
-      {/* benefits */}
+      {/* benefits - "Why Choose Us?" */}
       <section className="py-20 bg-gradient-to-br from-neutral-50 to-white dark:from-neutral-900 dark:to-neutral-950">
         <div className="container-custom">
           <div className="text-center mb-16">
@@ -248,6 +249,11 @@ function Home() {
           </div>
         </div>
       </section>
+
+      {/* NEW: Explore by Category Section */}
+      {!loading && !error && (
+        <ExploreByCategorySection facilities={facilities} />
+      )}
     </>
   );
 }

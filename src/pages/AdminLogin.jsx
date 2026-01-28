@@ -187,27 +187,7 @@ const AdminLogin = () => {
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-neutral-300"></div>
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-neutral-500 font-medium">Not an admin?</span>
-              </div>
             </div>
-
-            {/* customer login button */}
-            <Link to="/login">
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="w-full group hover:bg-neutral-50"
-              >
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="w-5 h-5 text-neutral-400 group-hover:text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  Customer Login
-                </span>
-              </Button>
-            </Link>
           </Card.Body>
         </Card>
         {/* back to home */}
