@@ -146,7 +146,7 @@ const ExploreByCategorySection = ({ facilities = [] }) => {
           </div>
         )}
       </div>
-      <style jsx>{`.scrollbar-hide::-webkit-scrollbar { display: none;}`}</style>
+      <style>{`.scrollbar-hide::-webkit-scrollbar { display: none;}`}</style>
     </section>
   );
 };

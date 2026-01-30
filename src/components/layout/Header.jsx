@@ -76,6 +76,30 @@ function Header() {
             >
               My Bookings
             </NavLink>
+            <NavLink
+              to="/about-us"
+              className={({ isActive }) =>
+                `font-medium transition-colors ${
+                  isActive
+                    ? 'text-primary-600'
+                    : 'text-neutral-600 hover:text-primary-600'
+                }`
+              }
+            >
+              About Us
+            </NavLink>
+            <NavLink
+              to="/contact-us"
+              className={({ isActive }) =>
+                `font-medium transition-colors ${
+                  isActive
+                    ? 'text-primary-600'
+                    : 'text-neutral-600 hover:text-primary-600'
+                }`
+              }
+            >
+              Contact Us
+            </NavLink>
 
             {isAdmin && (
               <NavLink

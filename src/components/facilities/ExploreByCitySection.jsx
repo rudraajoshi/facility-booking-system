@@ -65,7 +65,7 @@ const ExploreByCitySection = ({ facilities }) => {
           </p>
         </div>
 
-        {/* state filter */}
+        {/* filter - LEFT ALIGNED */}
         <div className="flex flex-wrap justify-start gap-3 mb-12">
           <button onClick={() => setSelectedCity('all')} className={`px-6 py-3 rounded-full font-medium transition-all ${selectedCity === 'all' ? 'bg-primary-600 text-white shadow-lg' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'}`}>
             All Cities
@@ -127,7 +127,7 @@ const ExploreByCitySection = ({ facilities }) => {
                 <FacilityCard
                   key={facility.id}
                   facility={facility}
-                //   onBook={handleBook}
+                  onBook={handleBook}
                   onViewDetails={handleViewDetails}
                 />
               ))}
@@ -143,7 +143,7 @@ const ExploreByCitySection = ({ facilities }) => {
         )}
       </div>
 
-      <style jsx>{`.scrollbar-hide::-webkit-scrollbar {display: none;}`}</style>
+      <style>{`.scrollbar-hide::-webkit-scrollbar {display: none;}`}</style>
     </section>
   );
 };

@@ -55,7 +55,7 @@ const ExploreByStateSection = ({ facilities }) => {
           </p>
         </div>
 
-        {/* state filter */}
+        {/* state filter - LEFT ALIGNED */}
         <div className="flex flex-wrap justify-start gap-3 mb-12">
           <button
             onClick={() => setSelectedState('all')}
@@ -125,7 +125,7 @@ const ExploreByStateSection = ({ facilities }) => {
           </div>
         )}
       </div>
-      <style jsx>{`.scrollbar-hide::-webkit-scrollbar { display: none;}`}</style>
+      <style>{`.scrollbar-hide::-webkit-scrollbar { display: none;}`}</style>
     </section>
   );
 };

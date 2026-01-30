@@ -24,6 +24,7 @@ import HelpCenter from '@/pages/HelpCenter';
 import ContactUs from '@/pages/ContactUs';
 import FAQs from '@/pages/FAQs';
 import CancellationPolicy from '@/pages/Cancellationpolicy';
+import AboutUs from '@/pages/AboutUs';
 
 function App() {
   return (
@@ -91,6 +92,7 @@ function App() {
                   <Route path="contact-us" element={<ContactUs />} />
                   <Route path="faqs" element={<FAQs />} />
                   <Route path="cancellation-policy" element={<CancellationPolicy />} />
+                   <Route path="about-us" element={<AboutUs />} />
 
                   {/* 404 error */}
                   <Route path="*" element={<NotFound />} />
