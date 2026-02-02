@@ -273,7 +273,7 @@ function ContactUs() {
                     <p className="text-sm text-neutral-600">
                       123 Business Street<br />
                       Suite 100<br />
-                      City, State 12345
+                      New York City, New York 12345
                     </p>
                   </div>
                 </div>

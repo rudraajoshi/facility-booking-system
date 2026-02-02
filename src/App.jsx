@@ -18,11 +18,13 @@ import Dashboard from '@/pages/Dashboard';
 import AdminLogin from '@/pages/AdminLogin';
 import AdminDashboard from '@/pages/AdminDashboard';
 import AdminFacilities from '@/pages/AdminFacilities';
+import AdminLocations from '@/pages/AdminLocations'; // ADD THIS IMPORT
 
 import HelpCenter from '@/pages/HelpCenter';
 import ContactUs from '@/pages/ContactUs';
 import FAQs from '@/pages/FAQs';
 import CancellationPolicy from '@/pages/Cancellationpolicy';
+import AboutUs from '@/pages/AboutUs';
 
 function App() {
   return (
@@ -34,11 +36,13 @@ function App() {
                 {/* auth routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
-
+                
+                {/* Admin login route (separate, not protected) */}
                 <Route path="/admin" element={<AdminLogin />} />
 
+                {/* Admin protected routes */}
                 <Route 
-                  path="/admin" 
+                  path="/admin/*" 
                   element={
                     <ProtectedRoute requireAdmin>
                       <AdminLayout />
@@ -47,8 +51,10 @@ function App() {
                 >
                   <Route path="dashboard" element={<AdminDashboard />} />
                   <Route path="facilities" element={<AdminFacilities />} />
+                  <Route path="locations" element={<AdminLocations />} /> {/* ADD THIS ROUTE */}
                 </Route>
 
+                {/* Public and user routes */}
                 <Route path="/" element={<Layout />}>
                   {/* public routes */}
                   <Route index element={<Home />} />
@@ -86,6 +92,7 @@ function App() {
                   <Route path="contact-us" element={<ContactUs />} />
                   <Route path="faqs" element={<FAQs />} />
                   <Route path="cancellation-policy" element={<CancellationPolicy />} />
+                   <Route path="about-us" element={<AboutUs />} />
 
                   {/* 404 error */}
                   <Route path="*" element={<NotFound />} />

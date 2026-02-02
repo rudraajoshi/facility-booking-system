@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/context/AuthContext';
 import { FacilityContext } from '@/context/FacilityContext';
 import { facilityService } from '@/services/facilityService';
+import { locationService } from '@/services/locationService';
 
 const AdminFacilities = () => {
   const navigate = useNavigate();
@@ -16,6 +17,11 @@ const AdminFacilities = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Location state
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [selectedStateId, setSelectedStateId] = useState('');
+
   // redirect if not admin
   useEffect(() => {
     if (!isAdmin) {
@@ -23,11 +29,27 @@ const AdminFacilities = () => {
     }
   }, [isAdmin, navigate]);
 
+  // Load states on mount
+  useEffect(() => {
+    loadStates();
+  }, []);
+
+  const loadStates = async () => {
+    try {
+      const statesData = await locationService.getAllStates();
+      setStates(statesData);
+    } catch (err) {
+      console.error('Error loading states:', err);
+    }
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     category: 'conference-room',
     description: '',
     location: '',
+    stateId: '',
+    city: '',
     capacityMin: '',
     capacityMax: '',
     pricingHourly: '',
@@ -44,6 +66,8 @@ const AdminFacilities = () => {
       category: 'conference-room',
       description: '',
       location: '',
+      stateId: '',
+      city: '',
       capacityMin: '',
       capacityMax: '',
       pricingHourly: '',
@@ -52,11 +76,13 @@ const AdminFacilities = () => {
       status: 'Available',
       amenities: '',
     });
+    setSelectedStateId('');
+    setCities([]);
     setError(null);
     setIsModalOpen(true);
   };
 
-  const handleOpenEditModal = (facility) => {
+  const handleOpenEditModal = async (facility) => {
     setModalMode('edit');
     setSelectedFacility(facility);
     setFormData({
@@ -64,6 +90,8 @@ const AdminFacilities = () => {
       category: facility.category,
       description: facility.description,
       location: facility.location,
+      stateId: facility.stateId || '',
+      city: facility.city || '',
       capacityMin: facility.capacity.min,
       capacityMax: facility.capacity.max,
       pricingHourly: facility.pricing.hourly,
@@ -72,6 +100,18 @@ const AdminFacilities = () => {
       status: facility.status,
       amenities: facility.amenities.join(', '),
     });
+    
+    // Load cities for the selected state
+    if (facility.stateId) {
+      setSelectedStateId(facility.stateId);
+      try {
+        const citiesData = await locationService.getCitiesByState(facility.stateId);
+        setCities(citiesData);
+      } catch (err) {
+        console.error('Error loading cities:', err);
+      }
+    }
+    
     setError(null);
     setIsModalOpen(true);
   };
@@ -79,6 +119,8 @@ const AdminFacilities = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedFacility(null);
+    setSelectedStateId('');
+    setCities([]);
     setError(null);
   };
 
@@ -89,16 +131,45 @@ const AdminFacilities = () => {
     });
   };
 
+  const handleStateChange = async (e) => {
+    const stateId = e.target.value;
+    setSelectedStateId(stateId);
+    setFormData({
+      ...formData,
+      stateId: stateId,
+      city: '' // Reset city when state changes
+    });
+
+    // Load cities for selected state
+    if (stateId) {
+      try {
+        const citiesData = await locationService.getCitiesByState(stateId);
+        setCities(citiesData);
+      } catch (err) {
+        console.error('Error loading cities:', err);
+        setCities([]);
+      }
+    } else {
+      setCities([]);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    
+    // Find the state name from stateId
+    const selectedState = states.find(s => s.id === formData.stateId);
     
     const facilityData = {
       name: formData.name,
       category: formData.category,
       description: formData.description,
       location: formData.location,
+      stateId: formData.stateId,
+      state: selectedState?.name || '',
+      city: formData.city,
       capacity: {
         min: parseInt(formData.capacityMin),
         max: parseInt(formData.capacityMax)
@@ -166,7 +237,9 @@ const AdminFacilities = () => {
     return facilities.filter(f => 
       f.name.toLowerCase().includes(search) ||
       f.category.toLowerCase().includes(search) ||
-      f.location.toLowerCase().includes(search)
+      f.location.toLowerCase().includes(search) ||
+      f.city?.toLowerCase().includes(search) ||
+      f.state?.toLowerCase().includes(search)
     );
   };
 
@@ -200,13 +273,21 @@ const AdminFacilities = () => {
             <h1 className="text-3xl font-bold text-neutral-900">Manage Facilities</h1>
             <p className="text-sm text-neutral-600 mt-1">Add, edit, or remove facilities from the system</p>
           </div>
-          <button
-            onClick={handleOpenAddModal}
-            disabled={isLoading}
-            className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            + Add New Facility
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate('/admin/locations')}
+              className="px-4 py-2 bg-neutral-600 text-white rounded-md hover:bg-neutral-700 transition-colors font-medium"
+            >
+              📍 Manage Locations
+            </button>
+            <button
+              onClick={handleOpenAddModal}
+              disabled={isLoading}
+              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              + Add New Facility
+            </button>
+          </div>
         </div>
 
         {/* statistics */}
@@ -221,7 +302,7 @@ const AdminFacilities = () => {
         <div className="bg-white p-4 rounded-lg shadow mb-6">
           <input
             type="text"
-            placeholder="Search facilities by name, category, or location..."
+            placeholder="Search facilities by name, category, location, city, or state..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
@@ -259,6 +340,7 @@ const AdminFacilities = () => {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Name</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Category</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">City, State</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Location</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Capacity</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Price/Hour</th>
@@ -275,6 +357,11 @@ const AdminFacilities = () => {
                       <td className="px-6 py-4">
                         <div className="text-sm text-neutral-600 capitalize">
                           {facility.category.replace('-', ' ')}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-neutral-600">
+                          {facility.city ? `${facility.city}, ${facility.state}` : 'Not set'}
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -322,7 +409,7 @@ const AdminFacilities = () => {
         </div>
       </div>
 
-      {/* add/edit facilities */}
+      {/* add/edit facilities modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -404,10 +491,54 @@ const AdminFacilities = () => {
                   />
                 </div>
 
-                {/* loc */}
+                {/* State and City */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                      State <span className="text-error-600">*</span>
+                    </label>
+                    <select
+                      name="stateId"
+                      value={formData.stateId}
+                      onChange={handleStateChange}
+                      required
+                      disabled={isLoading}
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500 disabled:bg-neutral-100 disabled:cursor-not-allowed"
+                    >
+                      <option value="">Select State</option>
+                      {states.map((state) => (
+                        <option key={state.id} value={state.id}>
+                          {state.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                      City <span className="text-error-600">*</span>
+                    </label>
+                    <select
+                      name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isLoading || !formData.stateId}
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500 disabled:bg-neutral-100 disabled:cursor-not-allowed"
+                    >
+                      <option value="">Select City</option>
+                      {cities.map((city, index) => (
+                        <option key={index} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* building location */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Location <span className="text-error-600">*</span>
+                    Building Location <span className="text-error-600">*</span>
                   </label>
                   <input
                     type="text"

@@ -4,6 +4,8 @@ import Card from '@/components/common/Card';
 import FacilityCard from '@/components/facilities/FacilityCard';
 import Loading from '@/components/common/Loading';
 import ExploreByCategorySection from '@/components/facilities/ExploreByCategorySection';
+import ExploreByStateSection from '@/components/facilities/ExploreByStateSection';
+import ExploreByCitySection from '@/components/facilities/ExploreByCitySection';
 import { useAuth } from '@/hooks/useAuth';
 import { useFacilities } from '@/hooks/useFacilities';
 
@@ -93,44 +95,49 @@ function Home() {
 
   return (
     <>
-      {/* hero */}
-      <section className="bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 dark:from-primary-800 dark:via-primary-900 dark:to-neutral-900 text-white py-20 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-64 h-64 bg-white rounded-full blur-3xl animate-pulse-slow"></div>
-          <div className="absolute bottom-20 right-20 w-80 h-80 bg-accent-300 rounded-full blur-3xl animate-pulse-slow"></div>
-        </div>
-
-        <div className="container-custom text-center relative z-10">
-          <h1 className="text-5xl md:text-6xl font-display font-bold mb-6 animate-fade-in">
+      {/* Hero Section - Enhanced with Larger Size and Background Image */}
+      <section 
+        className="relative min-h-[75vh] md:min-h-[85vh] overflow-hidden flex items-center"
+        style={{
+          backgroundImage: `url('/images/hero.png')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed'
+        }}
+      >
+        {/* Hero Content */}
+        <div className="container-custom text-center relative z-10 py-20">
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-bold mb-6 animate-fade-in leading-tight text-primary-900 drop-shadow-lg" style={{ textShadow: '2px 2px 4px rgba(255,255,255,0.8)' }}>
             Book Your Facility in Seconds
           </h1>
-          <p className="text-xl md:text-2xl text-primary-100 dark:text-primary-200 mb-8 max-w-3xl mx-auto animate-fade-in-up">
+          <p className="text-xl md:text-2xl lg:text-3xl text-primary-800 mb-10 max-w-4xl mx-auto animate-fade-in-up leading-relaxed drop-shadow-md font-semibold" style={{ textShadow: '1px 1px 3px rgba(255,255,255,0.8)' }}>
             Reserve conference rooms, meeting spaces, and more with ease
           </p>
           
           {isAuthenticated ? (
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up">
-              <div className="bg-white/10 backdrop-blur-sm px-6 py-3 rounded-lg border border-white/20">
-                <p className="text-primary-100 dark:text-primary-200 text-sm">Welcome back,</p>
-                <p className="text-white font-semibold text-lg">{user?.name}! 👋</p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 animate-fade-in-up">
+              <div className="bg-white/90 backdrop-blur-sm px-8 py-4 rounded-xl border border-primary-200 shadow-xl">
+                <p className="text-primary-700 text-sm mb-1">Welcome back,</p>
+                <p className="text-primary-900 font-semibold text-xl">{user?.name}! 👋</p>
               </div>
               <Link to="/facilities">
                 <Button 
                   variant="white" 
                   size="lg" 
-                  className="inline-block font-semibold shadow-lg hover:shadow-xl transition-all"
+                  className="inline-block font-semibold shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105 px-10 py-4 text-lg bg-white text-primary-900 hover:bg-primary-50"
                 >
                   Browse Facilities
                 </Button>
               </Link>
             </div>
           ) : (
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 animate-fade-in-up">
               <Link to="/facilities">
                 <Button 
                   variant="white" 
                   size="lg" 
-                  className="inline-block font-semibold shadow-lg hover:shadow-xl transition-all"
+                  className="inline-block font-semibold shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105 px-10 py-4 text-lg bg-white text-primary-900 hover:bg-primary-50"
                 >
                   Browse Facilities
                 </Button>
@@ -139,17 +146,24 @@ function Home() {
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="inline-block font-semibold border-2 border-white text-white hover:bg-white hover:text-primary-600 transition-all"
+                  className="inline-block font-semibold border-2 border-primary-800 text-primary-900 bg-white/90 hover:bg-primary-800 hover:text-white transition-all transform hover:scale-105 px-10 py-4 text-lg"
                 >
                   Sign Up Free
                 </Button>
               </Link>
             </div>
           )}
+
+          {/* Scroll Indicator */}
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <svg className="w-6 h-6 text-primary-900 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </div>
         </div>
       </section>
 
-      {/* featured facilities*/}
+      {/* Featured Facilities */}
       <section className="py-20 bg-white dark:bg-neutral-950">
         <div className="container-custom">
           <div className="text-center mb-16">
@@ -195,7 +209,7 @@ function Home() {
         </div>
       </section>
 
-      {/* stats */}
+      {/* Stats */}
       <section className="py-16 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
         <div className="container-custom">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -210,7 +224,7 @@ function Home() {
         </div>
       </section>
 
-      {/* benefits - "Why Choose Us?" */}
+      {/* Benefits - "Why Choose Us?" */}
       <section className="py-20 bg-gradient-to-br from-neutral-50 to-white dark:from-neutral-900 dark:to-neutral-950">
         <div className="container-custom">
           <div className="text-center mb-16">
@@ -229,17 +243,17 @@ function Home() {
                 className="group hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-primary-200 dark:hover:border-primary-800 overflow-hidden"
               >
                 <Card.Body className="p-8">
-                  {/* icons */}
+                  {/* Icons */}
                   <div className={`w-20 h-20 bg-gradient-to-br ${benefit.color} rounded-2xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
                     {benefit.icon}
                   </div>
 
-                  {/* title */}
+                  {/* Title */}
                   <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-3 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                     {benefit.title}
                   </h3>
 
-                  {/* desc */}
+                  {/* Description */}
                   <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
                     {benefit.description}
                   </p>
@@ -250,9 +264,18 @@ function Home() {
         </div>
       </section>
 
-      {/* NEW: Explore by Category Section */}
+      {/* Explore Sections */}
       {!loading && !error && (
-        <ExploreByCategorySection facilities={facilities} />
+        <>
+          {/* Explore by Category */}
+          <ExploreByCategorySection facilities={facilities} />
+          
+          {/* Explore by State */}
+          <ExploreByStateSection facilities={facilities} />
+          
+          {/* Explore by City */}
+          <ExploreByCitySection facilities={facilities} />
+        </>
       )}
     </>
   );
