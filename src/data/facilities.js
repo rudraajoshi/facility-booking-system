@@ -4,6 +4,8 @@ export const facilitiesData =[
         id: '1',
         name: 'Conference Room A', 
         category: 'meeting-room',
+        state: 'California',
+        city: 'San Francisco',
         description: "Spacious conference room with modern AV equipment, perfect for presentations and large meetings, video conferencing capabilities, high-speed internet, as well as comfortable seating.",
         images: [
             '/images/conference-room-3.jpg'
@@ -34,7 +36,7 @@ export const facilitiesData =[
             'Report damages if any immediately',
             'Max capacity must not be exceeded'
         ],
-        location: 'Building 1, Floor3 3',
+        location: 'Building 1, Floor 3',
         features: [
             '4K projector',
             'Wireless presentation',
@@ -50,11 +52,13 @@ export const facilitiesData =[
         id: '2',
         name: 'Meeting room B',
         category: 'meeting-room',
+        state: 'New York',
+        city: 'New York',
         description: 'Intimate meeting space perfect for small team meetings and brainstorming sessions. Equipped with modern furniture and collaboration tools.',
         images: [
             '/images/meeting-room-2.jpg'
         ],
-        capacity: { mind: 4, max: 8},
+        capacity: { min: 4, max: 8},
         pricing: {
             hourly: 30,
             halfDay: 110,
@@ -77,7 +81,7 @@ export const facilitiesData =[
             'Turn off lights when leaving',
             'Do not rearrange furniture'
         ],
-        location: 'Building2, Floor 2',
+        location: 'Building 2, Floor 2',
         features: [
             'Smart TV',
             'Comfortable seating',
@@ -92,6 +96,8 @@ export const facilitiesData =[
         id: '3',
         name: 'Training hall',
         category: 'training-room',
+        state: 'Texas',
+        city: 'Austin',
         description: 'Large hall designed for workshops, training sessions and seminars. Features theatre-style seating and professional audio-visual setup.',
         images: [
             '/images/training-room-1.jpg'
@@ -139,6 +145,8 @@ export const facilitiesData =[
         id: '4',
         name: 'Executive boardroom',
         category: 'meeting-room',
+        state: 'California',
+        city: 'Los Angeles',
         description: 'Premium boardroom for executive meetings and client presentations. Elegant design with top-tier amenities',
         images: [
             '/images/boardroom-1.jpg'
@@ -183,6 +191,8 @@ export const facilitiesData =[
         id: '5',
         name: 'Innovation lab',
         category: 'training-room',
+        state: 'Washington',
+        city: 'Seattle',
         description: 'Creative workspace designed for innovative workshops, design thinking sessions and collaborative projects',
         images: [
             '/images/innovation-lab-1.jpg',

@@ -18,7 +18,7 @@ import Dashboard from '@/pages/Dashboard';
 import AdminLogin from '@/pages/AdminLogin';
 import AdminDashboard from '@/pages/AdminDashboard';
 import AdminFacilities from '@/pages/AdminFacilities';
-import AdminLocations from '@/pages/AdminLocations'; // ADD THIS IMPORT
+import AdminLocations from '@/pages/AdminLocations'; 
 
 import HelpCenter from '@/pages/HelpCenter';
 import ContactUs from '@/pages/ContactUs';
