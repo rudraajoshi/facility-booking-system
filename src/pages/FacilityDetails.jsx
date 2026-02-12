@@ -1,36 +1,50 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useFacilities } from '@/hooks/useFacilities';
+import { useBookings } from '@/hooks/useBookings';
 import Button from '@/components/common/Button';
 import Badge from '@/components/common/Badge';
 import Loading from '@/components/common/Loading';
 import Card from '@/components/common/Card';
+import Calendar from '@/components/booking/Calendar';
 
 const FacilityDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { getFacilityById } = useFacilities();
+  const { bookings } = useBookings();
   const [facility, setFacility] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedDateTime, setSelectedDateTime] = useState(null);
 
   useEffect(() => {
     const loadFacility = async () => {
       setLoading(true);
       try {
+        console.log('🔍 Loading facility with ID:', id);
         const facilityData = getFacilityById(id);
+        
         if (facilityData) {
+          console.log('✅ Found facility in context:', facilityData);
           setFacility(facilityData);
         } else {
-          // Try fetching from API if not in context
+
+          console.log('⚠️ Facility not in context, fetching from API...');
           const response = await fetch(`/api/facilities/${id}`);
           const result = await response.json();
+          
+          console.log('📡 API Response:', result);
+          
           if (result.success) {
+            console.log('✅ Facility loaded from API:', result.data);
             setFacility(result.data);
+          } else {
+            console.error('❌ Facility not found in API');
           }
         }
       } catch (error) {
-        console.error('Error loading facility:', error);
+        console.error('❌ Error loading facility:', error);
       } finally {
         setLoading(false);
       }
@@ -41,12 +55,52 @@ const FacilityDetails = () => {
     }
   }, [id, getFacilityById]);
 
+
+  const getExistingBookings = () => {
+    if (!bookings || !id) return {};
+    
+    const facilityBookings = bookings.filter(b => 
+      (b.facility_id === id || b.facility_id === facility?.id) && 
+      b.booking_status !== 'cancelled'
+    );
+
+    const bookingsByDate = {};
+    facilityBookings.forEach(booking => {
+      const date = booking.booking_date;
+      if (!bookingsByDate[date]) {
+        bookingsByDate[date] = [];
+      }
+      if (booking.start_time) {
+        bookingsByDate[date].push(booking.start_time);
+      }
+    });
+    
+    return bookingsByDate;
+  };
+
+  const handleDateTimeSelect = (dateTime) => {
+    console.log('📅 Date/Time selected:', dateTime);
+    setSelectedDateTime(dateTime);
+  };
+
   const handleBookNow = () => {
-    navigate(`/booking/${id}`);
+    if (selectedDateTime) {
+
+      navigate(`/booking/${id}`, { 
+        state: { 
+          selectedDate: selectedDateTime.date,
+          selectedTime: selectedDateTime.time
+        } 
+      });
+    } else {
+      navigate(`/booking/${id}`);
+    }
   };
 
   const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
+    if (!status) return 'neutral';
+    const statusStr = typeof status === 'string' ? status : status.toString();
+    switch (statusStr.toLowerCase()) {
       case 'available':
         return 'success';
       case 'limited':
@@ -56,6 +110,22 @@ const FacilityDetails = () => {
       default:
         return 'neutral';
     }
+  };
+
+
+  const getCityValue = () => {
+    if (!facility?.city) return '';
+    return typeof facility.city === 'object' ? facility.city.city_name : facility.city;
+  };
+
+  const getStateValue = () => {
+    if (!facility?.state) return '';
+    return typeof facility.state === 'object' ? facility.state.state_name : facility.state;
+  };
+
+  const getStatusValue = () => {
+    if (!facility?.status) return 'Unknown';
+    return typeof facility.status === 'object' ? facility.status.status_name : facility.status;
   };
 
   if (loading) {
@@ -84,10 +154,14 @@ const FacilityDetails = () => {
     );
   }
 
+  const cityValue = getCityValue();
+  const stateValue = getStateValue();
+  const statusValue = getStatusValue();
+  const existingBookings = getExistingBookings();
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 py-8">
       <div className="container-custom">
-        {/* Back Button */}
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 mb-6 transition-colors"
@@ -99,14 +173,11 @@ const FacilityDetails = () => {
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Images and Details */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Image Gallery */}
             <Card>
               <Card.Body className="p-0">
                 {facility.images && facility.images.length > 0 ? (
                   <>
-                    {/* Main Image */}
                     <div className="relative h-96 overflow-hidden rounded-t-lg">
                       <img
                         src={facility.images[selectedImage]}
@@ -117,8 +188,8 @@ const FacilityDetails = () => {
                         }}
                       />
                       <div className="absolute top-4 right-4">
-                        <Badge variant={getStatusColor(facility.status)} size="lg">
-                          {facility.status}
+                        <Badge variant={getStatusColor(statusValue)} size="lg">
+                          {statusValue}
                         </Badge>
                       </div>
                     </div>
@@ -153,18 +224,15 @@ const FacilityDetails = () => {
                 )}
               </Card.Body>
             </Card>
-
-            {/* Facility Details */}
             <Card>
               <Card.Body>
                 <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-4">
                   {facility.name}
                 </h1>
 
-                {/* Location Information */}
                 <div className="space-y-3 mb-6 pb-6 border-b border-neutral-200 dark:border-neutral-800">
-                  {/* City & State */}
-                  {facility.city && facility.state && (
+
+                  {(cityValue || stateValue) && (
                     <div className="flex items-start gap-3">
                       <svg 
                         className="w-5 h-5 text-primary-600 dark:text-primary-400 mt-0.5 flex-shrink-0" 
@@ -188,105 +256,166 @@ const FacilityDetails = () => {
                       <div>
                         <p className="text-sm text-neutral-500 dark:text-neutral-400">Location</p>
                         <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                          {facility.city}, {facility.state}
+                          {cityValue}{cityValue && stateValue && ', '}{stateValue}
                         </p>
                       </div>
                     </div>
                   )}
 
-                  {/* Building Location */}
-                  <div className="flex items-start gap-3">
-                    <svg 
-                      className="w-5 h-5 text-neutral-500 dark:text-neutral-400 mt-0.5 flex-shrink-0" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2} 
-                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" 
-                      />
-                    </svg>
-                    <div>
-                      <p className="text-sm text-neutral-500 dark:text-neutral-400">Building</p>
-                      <p className="text-lg font-medium text-neutral-700 dark:text-neutral-300">
-                        {facility.location}
-                      </p>
+
+                  {facility.location && (
+                    <div className="flex items-start gap-3">
+                      <svg 
+                        className="w-5 h-5 text-neutral-500 dark:text-neutral-400 mt-0.5 flex-shrink-0" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" 
+                        />
+                      </svg>
+                      <div>
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400">Building</p>
+                        <p className="text-lg font-medium text-neutral-700 dark:text-neutral-300">
+                          {facility.location}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
-                {/* Description */}
-                <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-3">
-                    About this facility
-                  </h3>
-                  <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
-                    {facility.description}
-                  </p>
-                </div>
 
-                {/* Capacity */}
-                <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-3">
-                    Capacity
-                  </h3>
-                  <div className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2} 
-                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" 
-                      />
-                    </svg>
-                    <span className="text-lg">
-                      {facility.capacity.min} - {facility.capacity.max} people
-                    </span>
-                  </div>
-                </div>
-
-                {/* Amenities */}
-                {facility.amenities && facility.amenities.length > 0 && (
+                {facility.description && (
                   <div className="mb-6">
                     <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-3">
-                      Amenities
+                      About this facility
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                      {facility.description}
+                    </p>
+                  </div>
+                )}
+
+
+                {facility.capacity && (
+                  <div className="mb-6 pb-6 border-b border-neutral-200 dark:border-neutral-800">
+                    <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-3">
+                      Capacity
+                    </h3>
+                    <div className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" 
+                        />
+                      </svg>
+                      <span className="text-lg">
+                        {facility.capacity.min || 0} - {facility.capacity.max || 0} people
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {facility.amenities && facility.amenities.length > 0 && (
+                  <div className="mb-6 pb-6 border-b border-neutral-200 dark:border-neutral-800">
+                    <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
+                      Amenities & Features
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {facility.amenities.map((amenity, index) => (
                         <div
                           key={index}
-                          className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300"
+                          className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-primary-400 dark:hover:border-primary-600 transition-colors"
                         >
-                          <svg className="w-4 h-4 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
-                            <path
-                              fillRule="evenodd"
-                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          <span className="text-sm">{amenity}</span>
+                          <div className="flex-shrink-0 w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 20 20">
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                          <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                            {amenity}
+                          </span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Operating Hours */}
                 {facility.operatingHours && (
-                  <div className="mb-6">
+                  <div className="mb-6 pb-6 border-b border-neutral-200 dark:border-neutral-800">
                     <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-3">
                       Operating Hours
                     </h3>
-                    <p className="text-neutral-700 dark:text-neutral-300">
-                      {facility.operatingHours.start} - {facility.operatingHours.end}
-                    </p>
+                    <div className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" 
+                        />
+                      </svg>
+                      <p className="text-lg">
+                        {facility.operatingHours.start} - {facility.operatingHours.end}
+                      </p>
+                    </div>
                   </div>
                 )}
 
-                {/* Rules */}
+
+                {(facility.floor || facility.area || facility.type) && (
+                  <div className="mb-6 pb-6 border-b border-neutral-200 dark:border-neutral-800">
+                    <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
+                      Additional Details
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {facility.type && (
+                        <div className="flex items-start gap-2">
+                          <svg className="w-5 h-5 text-primary-600 dark:text-primary-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                          </svg>
+                          <div>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400">Type</p>
+                            <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{facility.type}</p>
+                          </div>
+                        </div>
+                      )}
+                      {facility.floor && (
+                        <div className="flex items-start gap-2">
+                          <svg className="w-5 h-5 text-primary-600 dark:text-primary-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                          </svg>
+                          <div>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400">Floor</p>
+                            <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{facility.floor}</p>
+                          </div>
+                        </div>
+                      )}
+                      {facility.area && (
+                        <div className="flex items-start gap-2">
+                          <svg className="w-5 h-5 text-primary-600 dark:text-primary-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                          </svg>
+                          <div>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400">Area</p>
+                            <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{facility.area} sq ft</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {facility.rules && facility.rules.length > 0 && (
                   <div>
                     <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-3">
@@ -304,45 +433,59 @@ const FacilityDetails = () => {
                 )}
               </Card.Body>
             </Card>
+
+            <Calendar 
+              facilityId={id}
+              onDateSelect={handleDateTimeSelect}
+              existingBookings={existingBookings}
+            />
           </div>
 
-          {/* Right Column - Booking Card */}
+
           <div className="lg:col-span-1">
             <div className="sticky top-24">
               <Card>
                 <Card.Body>
-                  <div className="mb-6">
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">Starting from</p>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-bold text-primary-600 dark:text-primary-400">
-                        ${facility.pricing.hourly}
-                      </span>
-                      <span className="text-neutral-600 dark:text-neutral-400">/hour</span>
-                    </div>
-                  </div>
+                  {facility.pricing && (
+                    <>
+                      <div className="mb-6">
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">Starting from</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-4xl font-bold text-primary-600 dark:text-primary-400">
+                            ${facility.pricing.hourly || 0}
+                          </span>
+                          <span className="text-neutral-600 dark:text-neutral-400">/hour</span>
+                        </div>
+                      </div>
+                      {(facility.pricing.halfDay || facility.pricing.fullDay) && (
+                        <div className="space-y-3 mb-6 pb-6 border-b border-neutral-200 dark:border-neutral-800">
+                          {facility.pricing.halfDay && (
+                            <div className="flex justify-between">
+                              <span className="text-neutral-600 dark:text-neutral-400">Half Day</span>
+                              <span className="font-semibold text-neutral-900 dark:text-neutral-100">
+                                ${facility.pricing.halfDay}
+                              </span>
+                            </div>
+                          )}
+                          {facility.pricing.fullDay && (
+                            <div className="flex justify-between">
+                              <span className="text-neutral-600 dark:text-neutral-400">Full Day</span>
+                              <span className="font-semibold text-neutral-900 dark:text-neutral-100">
+                                ${facility.pricing.fullDay}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
 
-                  {/* Pricing Options */}
-                  <div className="space-y-3 mb-6 pb-6 border-b border-neutral-200 dark:border-neutral-800">
-                    <div className="flex justify-between">
-                      <span className="text-neutral-600 dark:text-neutral-400">Half Day</span>
-                      <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-                        ${facility.pricing.halfDay}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-neutral-600 dark:text-neutral-400">Full Day</span>
-                      <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-                        ${facility.pricing.fullDay}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Status and Rating */}
                   <div className="space-y-3 mb-6">
                     <div className="flex justify-between items-center">
                       <span className="text-neutral-600 dark:text-neutral-400">Status</span>
-                      <Badge variant={getStatusColor(facility.status)}>
-                        {facility.status}
+                      <Badge variant={getStatusColor(statusValue)}>
+                        {statusValue}
                       </Badge>
                     </div>
 
@@ -356,23 +499,44 @@ const FacilityDetails = () => {
                           <span className="font-semibold text-neutral-900 dark:text-neutral-100">
                             {facility.rating}
                           </span>
-                          <span className="text-sm text-neutral-500">
-                            ({facility.reviewCount} reviews)
-                          </span>
+                          {facility.reviewCount && (
+                            <span className="text-sm text-neutral-500">
+                              ({facility.reviewCount} reviews)
+                            </span>
+                          )}
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Book Button */}
-                  {facility.status.toLowerCase() !== 'booked' ? (
+                  {selectedDateTime && (
+                    <div className="mb-6 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+                      <p className="text-sm font-medium text-primary-900 dark:text-primary-100 mb-1">
+                        Selected Date & Time
+                      </p>
+                      <p className="text-primary-700 dark:text-primary-300">
+                        {new Date(selectedDateTime.date).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </p>
+                      <p className="text-primary-700 dark:text-primary-300">
+                        {selectedDateTime.time}
+                      </p>
+                    </div>
+                  )}
+
+
+                  {statusValue.toLowerCase() !== 'booked' ? (
                     <Button
                       variant="primary"
                       size="lg"
                       className="w-full"
                       onClick={handleBookNow}
                     >
-                      Book Now
+                      {selectedDateTime ? 'Continue to Booking' : 'Book Now'}
                     </Button>
                   ) : (
                     <Button variant="neutral" size="lg" className="w-full" disabled>

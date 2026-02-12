@@ -28,9 +28,9 @@ const Booking = sequelize.define('Booking', {
         allowNull: false,
     },
     booking_status: {
-        type: DataTypes.ENUM('pending', 'confirmed', 'cancelled'),
+        type: DataTypes.ENUM('pending', 'confirmed', 'cancelled', 'completed'),
         allowNull: false,
-        defaultValue: 'pending',
+        defaultValue: 'confirmed',
     },
     created_at: {
         type: DataTypes.DATE,
@@ -40,5 +40,20 @@ const Booking = sequelize.define('Booking', {
     tableName: 'Bookings',
     freezeTableName: true,
     timestamps: false,
+    underscored: true
 });
+
+
+Booking.associate = (models) => {
+    Booking.belongsTo(models.User, {
+        foreignKey: 'user_id',
+        as: 'user'
+    });
+    
+    Booking.belongsTo(models.Facility, {
+        foreignKey: 'facility_id',
+        as: 'facility'
+    });
+};
+
 module.exports = Booking;

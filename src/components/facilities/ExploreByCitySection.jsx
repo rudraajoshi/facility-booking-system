@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import FacilityCard from '@/components/facilities/FacilityCard';
@@ -8,9 +8,32 @@ const ExploreByCitySection = ({ facilities }) => {
   const [selectedCity, setSelectedCity] = useState('all');
   const scrollContainerRef = useRef(null);
 
+  useEffect(() => {
+    if (facilities.length > 0) {
+      console.log('Sample facility structure:', facilities[0]);
+      console.log('First facility city field:', facilities[0].city);
+      console.log('Type of city:', typeof facilities[0].city);
+    }
+  }, [facilities]);
+
+
   const citiesWithState = facilities
-    .filter(f => f.city && f.state)
-    .map(f => ({ city: f.city, state: f.state, fullName: `${f.city}, ${f.state}` }))
+    .filter(f => {
+      const cityValue = typeof f.city === 'object' ? f.city?.city_name : f.city;
+      const stateValue = typeof f.state === 'object' ? f.state?.state_name : f.state;
+      return cityValue && stateValue;
+    })
+    .map(f => {
+
+      const cityValue = typeof f.city === 'object' ? f.city.city_name : f.city;
+      const stateValue = typeof f.state === 'object' ? f.state.state_name : f.state;
+      
+      return { 
+        city: cityValue, 
+        state: stateValue, 
+        fullName: `${cityValue}, ${stateValue}` 
+      };
+    })
     .reduce((acc, curr) => {
       const key = curr.fullName;
       if (!acc.find(item => item.fullName === key)) {
@@ -22,7 +45,10 @@ const ExploreByCitySection = ({ facilities }) => {
 
   const filteredFacilities = selectedCity === 'all' 
     ? facilities 
-    : facilities.filter(f => f.city === selectedCity.split(',')[0].trim());
+    : facilities.filter(f => {
+        const cityValue = typeof f.city === 'object' ? f.city.city_name : f.city;
+        return cityValue === selectedCity.split(',')[0].trim();
+      });
 
   const handleBook = (facilityId) => {
     navigate(`/booking/${facilityId}`);
@@ -65,15 +91,35 @@ const ExploreByCitySection = ({ facilities }) => {
           </p>
         </div>
 
-        {/* filter - LEFT ALIGNED */}
+        {/* filter  */}
         <div className="flex flex-wrap justify-start gap-3 mb-12">
-          <button onClick={() => setSelectedCity('all')} className={`px-6 py-3 rounded-full font-medium transition-all ${selectedCity === 'all' ? 'bg-primary-600 text-white shadow-lg' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'}`}>
+          <button 
+            key="all-cities"
+            onClick={() => setSelectedCity('all')} 
+            className={`px-6 py-3 rounded-full font-medium transition-all ${
+              selectedCity === 'all' 
+                ? 'bg-primary-600 text-white shadow-lg' 
+                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+            }`}
+          >
             All Cities
           </button>
           {citiesWithState.map((cityInfo) => {
-            const count = facilities.filter(f => f.city === cityInfo.city).length;
+            const count = facilities.filter(f => {
+              const cityValue = typeof f.city === 'object' ? f.city.city_name : f.city;
+              return cityValue === cityInfo.city;
+            }).length;
+            
             return (
-              <button key={cityInfo.fullName} onClick={() => setSelectedCity(cityInfo.fullName)} className={`px-6 py-3 rounded-full font-medium transition-all ${selectedCity === cityInfo.fullName ? 'bg-primary-600 text-white shadow-lg' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'}`}>
+              <button 
+                key={cityInfo.fullName}
+                onClick={() => setSelectedCity(cityInfo.fullName)} 
+                className={`px-6 py-3 rounded-full font-medium transition-all ${
+                  selectedCity === cityInfo.fullName 
+                    ? 'bg-primary-600 text-white shadow-lg' 
+                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                }`}
+              >
                 <span className="flex items-center gap-2">
                   📍
                   <span>
@@ -94,14 +140,22 @@ const ExploreByCitySection = ({ facilities }) => {
           showSlider ? (
             <div className="relative">
               {/* left arrow */}
-              <button onClick={() => scroll('left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-neutral-800 p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 -ml-4" aria-label="Scroll left">
+              <button 
+                onClick={() => scroll('left')} 
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-neutral-800 p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 -ml-4" 
+                aria-label="Scroll left"
+              >
                 <svg className="w-6 h-6 text-neutral-700 dark:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
 
               {/* scrollable container */}
-              <div ref={scrollContainerRef} className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div 
+                ref={scrollContainerRef} 
+                className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4" 
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
                 {filteredFacilities.map((facility) => (
                   <div key={facility.id} className="flex-shrink-0 w-[350px]">
                     <FacilityCard
@@ -114,14 +168,17 @@ const ExploreByCitySection = ({ facilities }) => {
               </div>
 
               {/* right arrow */}
-              <button onClick={() => scroll('right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-neutral-800 p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 -mr-4" aria-label="Scroll right">
+              <button 
+                onClick={() => scroll('right')} 
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-neutral-800 p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 -mr-4" 
+                aria-label="Scroll right"
+              >
                 <svg className="w-6 h-6 text-neutral-700 dark:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
             </div>
           ) : (
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredFacilities.map((facility) => (
                 <FacilityCard
@@ -153,8 +210,20 @@ ExploreByCitySection.propTypes = {
     PropTypes.shape({
       id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
-      state: PropTypes.string,
-      city: PropTypes.string,
+      state: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.shape({
+          state_id: PropTypes.string,
+          state_name: PropTypes.string,
+        })
+      ]),
+      city: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.shape({
+          city_id: PropTypes.string,
+          city_name: PropTypes.string,
+        })
+      ]),
     })
   ).isRequired,
 };

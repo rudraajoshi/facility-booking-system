@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/context/AuthContext';
 import { FacilityContext } from '@/context/FacilityContext';
 import { facilityService } from '@/services/facilityService';
-import { locationService } from '@/services/locationService';
+import  locationService  from '@/services/locationService';
 
 const AdminFacilities = () => {
   const navigate = useNavigate();
@@ -17,19 +17,20 @@ const AdminFacilities = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Location state
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
   const [selectedStateId, setSelectedStateId] = useState('');
+  
+  const [isAddStateModalOpen, setIsAddStateModalOpen] = useState(false);
+  const [newStateName, setNewStateName] = useState('');
+  const [newStateCities, setNewStateCities] = useState('');
 
-  // redirect if not admin
   useEffect(() => {
     if (!isAdmin) {
       navigate('/admin');
     }
   }, [isAdmin, navigate]);
 
-  // Load states on mount
   useEffect(() => {
     loadStates();
   }, []);
@@ -37,6 +38,7 @@ const AdminFacilities = () => {
   const loadStates = async () => {
     try {
       const statesData = await locationService.getAllStates();
+      console.log('📍 Loaded states:', statesData);
       setStates(statesData);
     } catch (err) {
       console.error('Error loading states:', err);
@@ -48,6 +50,7 @@ const AdminFacilities = () => {
     category: 'conference-room',
     description: '',
     location: '',
+    floor: '',
     stateId: '',
     city: '',
     capacityMin: '',
@@ -57,6 +60,10 @@ const AdminFacilities = () => {
     pricingFullDay: '',
     status: 'Available',
     amenities: '',
+    operatingHoursStart: '08:00 AM',
+    operatingHoursEnd: '08:00 PM',
+    rules: '',
+    imageUrl: '',
   });
 
   const handleOpenAddModal = () => {
@@ -66,6 +73,7 @@ const AdminFacilities = () => {
       category: 'conference-room',
       description: '',
       location: '',
+      floor: '',
       stateId: '',
       city: '',
       capacityMin: '',
@@ -75,6 +83,10 @@ const AdminFacilities = () => {
       pricingFullDay: '',
       status: 'Available',
       amenities: '',
+      operatingHoursStart: '08:00 AM',
+      operatingHoursEnd: '08:00 PM',
+      rules: '',
+      imageUrl: '',
     });
     setSelectedStateId('');
     setCities([]);
@@ -85,27 +97,44 @@ const AdminFacilities = () => {
   const handleOpenEditModal = async (facility) => {
     setModalMode('edit');
     setSelectedFacility(facility);
+    
+    const categoryValue = typeof facility.category === 'string' 
+      ? facility.category 
+      : facility.category?.category_name || 'conference-room';
+    
+    const facilityStateId = typeof facility.state === 'object' 
+      ? Number(facility.state?.state_id)
+      : Number(facility.stateId) || '';
+    
+    const facilityCityName = typeof facility.city === 'object' 
+      ? facility.city?.city_name 
+      : facility.city || '';
+    
     setFormData({
       name: facility.name,
-      category: facility.category,
+      category: categoryValue,
       description: facility.description,
       location: facility.location,
-      stateId: facility.stateId || '',
-      city: facility.city || '',
-      capacityMin: facility.capacity.min,
-      capacityMax: facility.capacity.max,
-      pricingHourly: facility.pricing.hourly,
-      pricingHalfDay: facility.pricing.halfDay,
-      pricingFullDay: facility.pricing.fullDay,
+      floor: facility.floor || '',
+      stateId: facilityStateId,
+      city: facilityCityName,
+      capacityMin: facility.capacity?.min || 0,
+      capacityMax: facility.capacity?.max || 0,
+      pricingHourly: facility.pricing?.hourly || 0,
+      pricingHalfDay: facility.pricing?.halfDay || 0,
+      pricingFullDay: facility.pricing?.fullDay || 0,
       status: facility.status,
-      amenities: facility.amenities.join(', '),
+      amenities: Array.isArray(facility.amenities) ? facility.amenities.join(', ') : '',
+      operatingHoursStart: facility.operating_hours?.start || facility.operatingHours?.start || '08:00 AM',
+      operatingHoursEnd: facility.operating_hours?.end || facility.operatingHours?.end || '08:00 PM',
+      rules: Array.isArray(facility.rules) ? facility.rules.join('\n') : '',
+      imageUrl: facility.image_url || facility.imageUrl || (facility.images && facility.images.length > 0 ? facility.images[0] : ''),
     });
     
-    // Load cities for the selected state
-    if (facility.stateId) {
-      setSelectedStateId(facility.stateId);
+    if (facilityStateId) {
+      setSelectedStateId(facilityStateId);
       try {
-        const citiesData = await locationService.getCitiesByState(facility.stateId);
+        const citiesData = await locationService.getCitiesByState(facilityStateId);
         setCities(citiesData);
       } catch (err) {
         console.error('Error loading cities:', err);
@@ -132,15 +161,14 @@ const AdminFacilities = () => {
   };
 
   const handleStateChange = async (e) => {
-    const stateId = e.target.value;
+    const stateId = e.target.value ? Number(e.target.value) : '';
     setSelectedStateId(stateId);
     setFormData({
       ...formData,
       stateId: stateId,
-      city: '' // Reset city when state changes
+      city: ''
     });
 
-    // Load cities for selected state
     if (stateId) {
       try {
         const citiesData = await locationService.getCitiesByState(stateId);
@@ -154,22 +182,64 @@ const AdminFacilities = () => {
     }
   };
 
+  const handleAddNewState = async () => {
+    if (!newStateName.trim()) {
+      alert('Please enter a state name');
+      return;
+    }
+
+    const citiesArray = newStateCities
+      .split(',')
+      .map(c => c.trim())
+      .filter(Boolean);
+
+    if (citiesArray.length === 0) {
+      alert('Please enter at least one city');
+      return;
+    }
+
+    try {
+      const newState = await locationService.createState({
+        name: newStateName.trim(),
+        cities: citiesArray
+      });
+
+      setStates([...states, newState]);
+      setNewStateName('');
+      setNewStateCities('');
+      setIsAddStateModalOpen(false);
+      alert('✅ State added successfully!');
+    } catch (err) {
+      console.error('Error adding state:', err);
+      alert('❌ Failed to add state. Please try again.');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    
-    // Find the state name from stateId
-    const selectedState = states.find(s => s.id === formData.stateId);
-    
+
+    if (!formData.stateId) {
+      setError('Please select a state');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formData.city) {
+      setError('Please select a city');
+      setIsLoading(false);
+      return;
+    }
+
     const facilityData = {
       name: formData.name,
       category: formData.category,
       description: formData.description,
       location: formData.location,
-      stateId: formData.stateId,
-      state: selectedState?.name || '',
-      city: formData.city,
+      floor: formData.floor,
+      stateId: Number(formData.stateId),
+      cityName: formData.city.trim(),
       capacity: {
         min: parseInt(formData.capacityMin),
         max: parseInt(formData.capacityMax)
@@ -181,10 +251,18 @@ const AdminFacilities = () => {
       },
       status: formData.status,
       amenities: formData.amenities.split(',').map(a => a.trim()).filter(Boolean),
+      operatingHours: {
+        start: formData.operatingHoursStart,
+        end: formData.operatingHoursEnd
+      },
+      rules: formData.rules.split('\n').map(r => r.trim()).filter(Boolean),
+      imageUrl: formData.imageUrl,
       rating: modalMode === 'edit' ? selectedFacility.rating : 0,
       reviewCount: modalMode === 'edit' ? selectedFacility.reviewCount : 0,
-      images: modalMode === 'edit' ? selectedFacility.images : []
+      images: formData.imageUrl ? [formData.imageUrl] : []
     };
+
+    console.log('📤 Final facility data being sent to API:', JSON.stringify(facilityData, null, 2));
 
     try {
       if (modalMode === 'add') {
@@ -203,7 +281,7 @@ const AdminFacilities = () => {
       }
       handleCloseModal();
     } catch (err) {
-      console.error('Error saving facility:', err);
+      console.error('❌ Error saving facility:', err);
       setError(err.message || 'Failed to save facility. Please try again.');
     } finally {
       setIsLoading(false);
@@ -234,13 +312,27 @@ const AdminFacilities = () => {
     if (!searchTerm) return facilities;
     
     const search = searchTerm.toLowerCase();
-    return facilities.filter(f => 
-      f.name.toLowerCase().includes(search) ||
-      f.category.toLowerCase().includes(search) ||
-      f.location.toLowerCase().includes(search) ||
-      f.city?.toLowerCase().includes(search) ||
-      f.state?.toLowerCase().includes(search)
-    );
+    return facilities.filter(f => {
+      const category = typeof f.category === 'string' 
+        ? f.category 
+        : f.category?.category_name || '';
+      
+      const city = typeof f.city === 'object' 
+        ? f.city?.city_name 
+        : f.city || '';
+      
+      const state = typeof f.state === 'object' 
+        ? f.state?.state_name 
+        : f.state || '';
+      
+      return (
+        f.name.toLowerCase().includes(search) ||
+        category.toLowerCase().includes(search) ||
+        f.location.toLowerCase().includes(search) ||
+        city.toLowerCase().includes(search) ||
+        state.toLowerCase().includes(search)
+      );
+    });
   };
 
   const filteredFacilities = getFilteredFacilities();
@@ -263,6 +355,28 @@ const AdminFacilities = () => {
       default:
         return 'bg-neutral-100 text-neutral-800';
     }
+  };
+
+  const getCategoryDisplay = (category) => {
+    if (typeof category === 'string') {
+      return category.replace(/-/g, ' ');
+    }
+    if (typeof category === 'object' && category?.category_name) {
+      return category.category_name.replace(/-/g, ' ');
+    }
+    return 'N/A';
+  };
+
+  const getCityDisplay = (city) => {
+    if (typeof city === 'string') return city;
+    if (typeof city === 'object' && city?.city_name) return city.city_name;
+    return 'N/A';
+  };
+
+  const getStateDisplay = (state) => {
+    if (typeof state === 'string') return state;
+    if (typeof state === 'object' && state?.state_name) return state.state_name;
+    return 'N/A';
   };
 
   return (
@@ -290,7 +404,6 @@ const AdminFacilities = () => {
           </div>
         </div>
 
-        {/* statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <StatCard title="Total Facilities" value={stats.total} color="bg-primary-50 text-primary-900" />
           <StatCard title="Available" value={stats.available} color="bg-success-50 text-success-900" />
@@ -298,7 +411,6 @@ const AdminFacilities = () => {
           <StatCard title="Booked" value={stats.booked} color="bg-error-50 text-error-900" />
         </div>
 
-        {/* search */}
         <div className="bg-white p-4 rounded-lg shadow mb-6">
           <input
             type="text"
@@ -309,7 +421,6 @@ const AdminFacilities = () => {
           />
         </div>
 
-        {/* facilities */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="px-6 py-4 border-b border-neutral-200">
             <h2 className="text-xl font-semibold text-neutral-900">
@@ -356,12 +467,12 @@ const AdminFacilities = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-neutral-600 capitalize">
-                          {facility.category.replace('-', ' ')}
+                          {getCategoryDisplay(facility.category)}
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-neutral-600">
-                          {facility.city ? `${facility.city}, ${facility.state}` : 'Not set'}
+                          {getCityDisplay(facility.city)}, {getStateDisplay(facility.state)}
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -369,12 +480,12 @@ const AdminFacilities = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-neutral-600">
-                          {facility.capacity.min}-{facility.capacity.max} people
+                          {facility.capacity?.min || 0}-{facility.capacity?.max || 0} people
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm font-semibold text-neutral-900">
-                          ${facility.pricing.hourly}/hour
+                          ${facility.pricing?.hourly || 0}/hour
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -409,11 +520,10 @@ const AdminFacilities = () => {
         </div>
       </div>
 
-      {/* add/edit facilities modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-3xl w-full my-8">
+            <div className="p-6 max-h-[85vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-neutral-900">
                   {modalMode === 'add' ? 'Add New Facility' : 'Edit Facility'}
@@ -436,7 +546,6 @@ const AdminFacilities = () => {
               )}
               
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* facility name */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Facility Name <span className="text-error-600">*</span>
@@ -453,7 +562,6 @@ const AdminFacilities = () => {
                   />
                 </div>
 
-                {/* category */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Category <span className="text-error-600">*</span>
@@ -474,7 +582,6 @@ const AdminFacilities = () => {
                   </select>
                 </div>
 
-                {/* desc */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Description <span className="text-error-600">*</span>
@@ -491,27 +598,36 @@ const AdminFacilities = () => {
                   />
                 </div>
 
-                {/* State and City */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 mb-1">
                       State <span className="text-error-600">*</span>
                     </label>
-                    <select
-                      name="stateId"
-                      value={formData.stateId}
-                      onChange={handleStateChange}
-                      required
-                      disabled={isLoading}
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500 disabled:bg-neutral-100 disabled:cursor-not-allowed"
-                    >
-                      <option value="">Select State</option>
-                      {states.map((state) => (
-                        <option key={state.id} value={state.id}>
-                          {state.name}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        name="stateId"
+                        value={formData.stateId}
+                        onChange={handleStateChange}
+                        required
+                        disabled={isLoading}
+                        className="flex-1 px-4 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500 disabled:bg-neutral-100 disabled:cursor-not-allowed"
+                      >
+                        <option value="">Select State</option>
+                        {states.map((state) => (
+                          <option key={state.id} value={state.id}>
+                            {state.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddStateModalOpen(true)}
+                        className="px-3 py-2 bg-neutral-200 text-neutral-700 rounded-md hover:bg-neutral-300 transition-colors text-sm"
+                        title="Add New State"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 mb-1">
@@ -535,24 +651,39 @@ const AdminFacilities = () => {
                   </div>
                 </div>
 
-                {/* building location */}
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Building Location <span className="text-error-600">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Building 1, Floor 3"
-                    required
-                    disabled={isLoading}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500 disabled:bg-neutral-100 disabled:cursor-not-allowed"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                      Building Location <span className="text-error-600">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="location"
+                      value={formData.location}
+                      onChange={handleInputChange}
+                      placeholder="e.g., Building 1"
+                      required
+                      disabled={isLoading}
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500 disabled:bg-neutral-100 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                      Floor <span className="text-error-600">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="floor"
+                      value={formData.floor}
+                      onChange={handleInputChange}
+                      placeholder="e.g., Floor 3 or Ground Floor"
+                      required
+                      disabled={isLoading}
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500 disabled:bg-neutral-100 disabled:cursor-not-allowed"
+                    />
+                  </div>
                 </div>
 
-                {/* capacity */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 mb-1">
@@ -588,7 +719,6 @@ const AdminFacilities = () => {
                   </div>
                 </div>
 
-                {/* pricing */}
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 mb-1">
@@ -643,7 +773,39 @@ const AdminFacilities = () => {
                   </div>
                 </div>
 
-                {/* status */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                      Operating Hours Start <span className="text-error-600">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="operatingHoursStart"
+                      value={formData.operatingHoursStart}
+                      onChange={handleInputChange}
+                      placeholder="08:00 AM"
+                      required
+                      disabled={isLoading}
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500 disabled:bg-neutral-100 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                      Operating Hours End <span className="text-error-600">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="operatingHoursEnd"
+                      value={formData.operatingHoursEnd}
+                      onChange={handleInputChange}
+                      placeholder="08:00 PM"
+                      required
+                      disabled={isLoading}
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500 disabled:bg-neutral-100 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Status <span className="text-error-600">*</span>
@@ -661,7 +823,6 @@ const AdminFacilities = () => {
                   </select>
                 </div>
 
-                {/* amenities */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Amenities (comma-separated) <span className="text-error-600">*</span>
@@ -671,7 +832,7 @@ const AdminFacilities = () => {
                     name="amenities"
                     value={formData.amenities}
                     onChange={handleInputChange}
-                    placeholder="WiFi, Projector, Whiteboard, Video Conferencing"
+                    placeholder="High-Speed WiFi, 4K Projector, Whiteboard, Video Conferencing"
                     required
                     disabled={isLoading}
                     className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500 disabled:bg-neutral-100 disabled:cursor-not-allowed"
@@ -679,7 +840,38 @@ const AdminFacilities = () => {
                   <p className="text-xs text-neutral-500 mt-1">Separate each amenity with a comma</p>
                 </div>
 
-                {/* form actions */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Facility Rules (one per line)
+                  </label>
+                  <textarea
+                    name="rules"
+                    value={formData.rules}
+                    onChange={handleInputChange}
+                    rows="4"
+                    placeholder="No food allowed (beverages permitted)&#10;Please maintain professional noise levels&#10;Clean up after use"
+                    disabled={isLoading}
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500 disabled:bg-neutral-100 disabled:cursor-not-allowed"
+                  />
+                  <p className="text-xs text-neutral-500 mt-1">Enter each rule on a new line</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Image URL
+                  </label>
+                  <input
+                    type="url"
+                    name="imageUrl"
+                    value={formData.imageUrl}
+                    onChange={handleInputChange}
+                    placeholder="https://example.com/image.jpg"
+                    disabled={isLoading}
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500 disabled:bg-neutral-100 disabled:cursor-not-allowed"
+                  />
+                  <p className="text-xs text-neutral-500 mt-1">Enter a URL to an image of the facility</p>
+                </div>
+
                 <div className="flex gap-3 pt-4 border-t border-neutral-200">
                   <button
                     type="submit"
@@ -701,6 +893,61 @@ const AdminFacilities = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAddStateModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-neutral-900 mb-4">Add New State</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  State Name <span className="text-error-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newStateName}
+                  onChange={(e) => setNewStateName(e.target.value)}
+                  placeholder="e.g., California"
+                  className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  Cities (comma-separated) <span className="text-error-600">*</span>
+                </label>
+                <textarea
+                  value={newStateCities}
+                  onChange={(e) => setNewStateCities(e.target.value)}
+                  placeholder="e.g., San Francisco, Los Angeles, San Diego"
+                  rows="3"
+                  className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleAddNewState}
+                  className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors font-medium"
+                >
+                  Add State
+                </button>
+                <button
+                  onClick={() => {
+                    setIsAddStateModalOpen(false);
+                    setNewStateName('');
+                    setNewStateCities('');
+                  }}
+                  className="px-6 py-2 bg-neutral-200 text-neutral-700 rounded-md hover:bg-neutral-300 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>

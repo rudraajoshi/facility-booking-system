@@ -21,8 +21,21 @@ exports.getAllBookings = async(req, res, next) => {
         if(booking_date) filters.booking_date = booking_date;
 
         const { count, rows } = await bookingService.getAll(filters, page, limit);
+
+        console.log('\n=== BOOKING API RESPONSE ===');
+        console.log('Total bookings:', count);
+        console.log('First booking:', rows[0]);
+        console.log('First booking has user?', !!rows[0]?.user);
+        console.log('First booking has facility?', !!rows[0]?.facility);
+        if (rows[0]) {
+            console.log('User data:', rows[0].user);
+            console.log('Facility data:', rows[0].facility);
+        }
+        console.log('========================\n');
+        
         return paginatedResponse(res, rows, count, page, limit);
     } catch(error){
+        console.error('ERROR in getAllBookings:', error);
         next(error);
     }
 };
@@ -49,17 +62,25 @@ exports.getBookingById = async(req, res, next) => {
 // post api bookings 
 exports.createBooking = async(req, res, next) => {
     try{
-        const {facility_id, booking_date, start_time, end_time} = req.body;
+        console.log('📥 Received booking request:', req.body);
+
+        const { facility_id, booking_date, start_time, end_time } = req.body;
+
+        console.log('📝 Parsed booking data:', { facility_id, booking_date, start_time, end_time });
 
         if(!facility_id || !booking_date || !start_time || !end_time){
+            console.error('❌ Missing required fields:', { facility_id, booking_date, start_time, end_time });
             return errorResponse(res, STATUS.BAD_REQUEST, 'facility_id, booking_date, start_time and end_time are required');
         }
 
         // facility verification
         const facility = await facilityService.getById(facility_id);
         if(!facility){
+            console.error('❌ Facility not found:', facility_id);
             return errorResponse(res, STATUS.NOT_FOUND, MESSAGES.FACILITY_NOT_FOUND);
         }
+
+        console.log('✅ Facility found:', facility.facility_name);
 
         // check availability status
         if(facility.availability_status === 'booked'){
@@ -72,22 +93,27 @@ exports.createBooking = async(req, res, next) => {
             return errorResponse(res, STATUS.BAD_REQUEST, MESSAGES.BOOKING_CONFLICT);
         }
 
+        console.log('✅ No conflicts, creating booking...');
+
         const booking = await bookingService.create({
             user_id: req.userId,
             facility_id,
             booking_date,
             start_time,
             end_time,
-            booking_status: 'pending',
+            booking_status: 'confirmed',
         });
+
+        console.log('✅ Booking created successfully:', booking);
 
         return createdResponse(res, MESSAGES.BOOKED_CREATED, booking);
     } catch(error){
+        console.error('❌ Error in createBooking:', error);
         next(error);
     }
 };
 
-// put bookings id [updated date and time if pending]
+// put bookings id [updated date and time for confirmed bookings]
 exports.updateBooking = async(req, res, next) => {
     try{
         const booking = await bookingService.getById(req.params.id);
@@ -96,20 +122,19 @@ exports.updateBooking = async(req, res, next) => {
         }
 
         // auth
-        if(req.userRole !== ROLES.ADMIN && booking_user_id !== req.userId){
+        if(req.userRole !== ROLES.ADMIN && booking.user_id !== req.userId){
             return errorResponse(res, STATUS.FORBIDDEN, MESSAGES.ACCESS_DENIED);
         }
 
-        // only pending bookings can be updated
-        if(booking.booking_status !== 'pending'){
-            return errorResponse(res, STATUS.BAD_REQUEST, MESSAGES.BOOKING_CANNOT_UPDATE);
+        if(booking.booking_status === 'cancelled' || booking.booking_status === 'completed'){
+            return errorResponse(res, STATUS.BAD_REQUEST, 'Cannot update cancelled or completed bookings');
         }
 
         const { booking_date, start_time, end_time } = req.body;
 
         const newDate = booking_date || booking.booking_date;
         const newStartTime = start_time || booking.start_time;
-        const newEndTime = end_time || booking.start_end;
+        const newEndTime = end_time || booking.end_time;
 
         // check conflict
         const hasConflict = await bookingService.checkConflict(
@@ -146,9 +171,8 @@ exports.updateBookingStatus = async(req, res, next) => {
 
         const { booking_status } = req.body;
 
-        // admin confirmation
-        if(booking_status === 'confirmed' && req.userRole !== ROLES.ADMIN){
-            return errorResponse(res, STATUS.FORBIDDEN, MESSAGES.ONLY_ADMIN_CONFIRM);
+        if(req.userRole !== ROLES.ADMIN && booking_status !== 'cancelled'){
+            return errorResponse(res, STATUS.FORBIDDEN, 'Only admins can change status to ' + booking_status);
         }
 
         const updated = await bookingService.update(booking, {booking_status});
@@ -176,4 +200,4 @@ exports.cancelBooking = async(req, res, next) => {
     } catch(error){
         next(error);
     }
-}
+};

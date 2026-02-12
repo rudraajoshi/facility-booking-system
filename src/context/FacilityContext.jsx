@@ -8,19 +8,23 @@ export const FacilityProvider = ({children}) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // fetch facilities from MSW API
+
     const fetchFacilities = async () => {
         try {
             setLoading(true);
             const response = await fetch('/api/facilities');
             const result = await response.json();
             
+            console.log('🔄 Fetched facilities from API:', result);
+            
             if (result.success) {
+                console.log('✅ Loaded facilities:', result.data.length);
+                console.log('📋 First facility:', result.data[0]);
                 setFacilities(result.data);
             }
         } catch (error) {
             setError('Failed to load facilities');
-            console.error(error);
+            console.error('❌ Error fetching facilities:', error);
         } finally {
             setLoading(false);
         }
@@ -39,12 +43,30 @@ export const FacilityProvider = ({children}) => {
     };
 
     /** 
-     * get facility by ID
+     * get facility by ID 
      * @param {string} id
      * @returns {Object|null}
      */
     const getFacilityById = (id) => {
-        return facilities.find(facility => facility.id === id) || null;
+        console.log('🔍 getFacilityById called with:', id);
+        console.log('📊 Total facilities in context:', facilities.length);
+        console.log('📋 Available facility IDs:', facilities.map(f => f.id || f._id));
+   
+        let facility = facilities.find(f => f.id === id);
+        
+
+        if (!facility) {
+            facility = facilities.find(f => f._id === id);
+        }
+        
+
+        if (!facility) {
+            facility = facilities.find(f => String(f.id) === String(id) || String(f._id) === String(id));
+        }
+        
+        console.log('🎯 Found facility:', facility ? facility.name : 'NOT FOUND');
+        
+        return facility || null;
     };
 
     /**
@@ -56,25 +78,31 @@ export const FacilityProvider = ({children}) => {
         let filtered = [...facilities];
         
         if (filters.category && filters.category !== 'all') {
-            filtered = filtered.filter(f => f.category === filters.category);
+            filtered = filtered.filter(f => {
+                const category = typeof f.category === 'object' ? f.category?.category_name : f.category;
+                return category === filters.category;
+            });
         }
         
         if (filters.minCapacity) {
-            filtered = filtered.filter(f => f.capacity.max >= filters.minCapacity);
+            filtered = filtered.filter(f => f.capacity?.max >= filters.minCapacity);
         }
         
         if (filters.maxPrice) {
-            filtered = filtered.filter(f => f.pricing.hourly <= filters.maxPrice);
+            filtered = filtered.filter(f => f.pricing?.hourly <= filters.maxPrice);
         }
         
         if (filters.amenities && filters.amenities.length > 0) {
             filtered = filtered.filter(f => 
-                filters.amenities.every(amenity => f.amenities.includes(amenity))
+                f.amenities && filters.amenities.every(amenity => f.amenities.includes(amenity))
             );
         }
         
         if (filters.status && filters.status !== 'all') {
-            filtered = filtered.filter(f => f.status === filters.status);
+            filtered = filtered.filter(f => {
+                const status = typeof f.status === 'object' ? f.status?.status_name : f.status;
+                return status === filters.status;
+            });
         }
         
         return filtered;
@@ -92,14 +120,22 @@ export const FacilityProvider = ({children}) => {
         
         const lowercaseQuery = query.toLowerCase().trim();
         
-        return facilities.filter(facility =>
-            facility.name.toLowerCase().includes(lowercaseQuery) ||
-            facility.description.toLowerCase().includes(lowercaseQuery) ||
-            facility.location.toLowerCase().includes(lowercaseQuery) ||
-            facility.amenities.some(amenity =>
-                amenity.toLowerCase().includes(lowercaseQuery)
-            )
-        );
+        return facilities.filter(facility => {
+            // Handle city/state as objects
+            const city = typeof facility.city === 'object' ? facility.city?.city_name : facility.city;
+            const state = typeof facility.state === 'object' ? facility.state?.state_name : facility.state;
+            
+            return (
+                facility.name?.toLowerCase().includes(lowercaseQuery) ||
+                facility.description?.toLowerCase().includes(lowercaseQuery) ||
+                facility.location?.toLowerCase().includes(lowercaseQuery) ||
+                city?.toLowerCase().includes(lowercaseQuery) ||
+                state?.toLowerCase().includes(lowercaseQuery) ||
+                (facility.amenities && facility.amenities.some(amenity =>
+                    amenity.toLowerCase().includes(lowercaseQuery)
+                ))
+            );
+        });
     };
 
     /** 
@@ -108,7 +144,10 @@ export const FacilityProvider = ({children}) => {
      * @returns {Array}
      */
     const getFacilitiesByCategory = (category) => {
-        return facilities.filter(f => f.category === category);
+        return facilities.filter(f => {
+            const facilityCategory = typeof f.category === 'object' ? f.category?.category_name : f.category;
+            return facilityCategory === category;
+        });
     };
 
     /** 
@@ -116,7 +155,10 @@ export const FacilityProvider = ({children}) => {
      * @returns {Array}
      */
     const getAvailableFacilities = () => {
-        return facilities.filter(f => f.status === 'Available');
+        return facilities.filter(f => {
+            const status = typeof f.status === 'object' ? f.status?.status_name : f.status;
+            return status === 'Available';
+        });
     };
 
     const value = {

@@ -1,32 +1,54 @@
-const {City, State} = require('../models');
-const getAll = async(state_id = null) => {
-    const where = {};
-    if(state_id) where.state_id = state_id;
+const City = require('../models/City.model');
+const State = require('../models/State.model');
 
+const cityService = {
+  // get all cities
+  getAll: async () => {
     return await City.findAll({
-        where,
-        order: [['city_id', 'ASC']],
-        include: [{model: State, as: 'state'}],
+      include: [{
+        model: State,
+        as: 'state',
+        attributes: ['state_id', 'state_name'],
+        required: false,
+      }],
+      order: [['city_name', 'ASC']],
     });
-};
+  },
 
-const getById = async(city_id) => {
-    return await City.findByPk(city_id, {
-        include: [{model: State, as:'state'}],
+  // get cities by state
+  getByState: async (stateId) => {
+    return await City.findAll({
+      where: { state_id: stateId },
+      order: [['city_name', 'ASC']],
     });
-};
+  },
 
-const create = async(data) => {
+  // get city by ID
+  getById: async (id) => {
+    return await City.findByPk(id, {
+      include: [{
+        model: State,
+        as: 'state',
+        attributes: ['state_id', 'state_name'],
+        required: false,
+      }],
+    });
+  },
+
+  // create city
+  create: async (data) => {
     return await City.create(data);
-}
+  },
 
-const update = async(city,data) =>{
-    await city.update(data);
-    return city;
+  // update city
+  update: async (city, data) => {
+    return await city.update(data);
+  },
+
+  // delete city
+  remove: async (city) => {
+    return await city.destroy();
+  },
 };
 
-const remove = async (city) =>{
-    await city.destroy();
-};
-
-module.exports = {getAll, getById, create, update, remove};
+module.exports = cityService;

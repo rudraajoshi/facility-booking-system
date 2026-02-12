@@ -1,33 +1,53 @@
-const { State, City } = require('../models');
+const State = require('../models/State.model');
+const City = require('../models/City.model');
 
-const getAll = async() => {
+const stateService = {
+  // get all states with cities
+  getAll: async () => {
     return await State.findAll({
-        order: [['state_id', 'ASC']],
-        include: [{model: City, as: 'cities'}],
+      include: [{
+        model: City,
+        as: 'cities',
+        attributes: ['city_id', 'city_name'],
+        required: false,
+      }],
+      order: [['state_name', 'ASC']],
     });
-};
+  },
 
-const getById = async(state_id) => {
-    return await State.findByPk(state_id, {
-        include: [{model: City, as: 'cities'}],
+  // get state by ID
+  getById: async (id) => {
+    return await State.findByPk(id, {
+      include: [{
+        model: City,
+        as: 'cities',
+        attributes: ['city_id', 'city_name'],
+        required: false,
+      }],
     });
-};
+  },
 
-const findByName = async(state_name) => {
-    return await State.findOne({where: {state_name}});
-};
+  // find state by name
+  findByName: async (name) => {
+    return await State.findOne({
+      where: { state_name: name }
+    });
+  },
 
-const create = async(data) => {
+  // create state
+  create: async (data) => {
     return await State.create(data);
+  },
+
+  // update state
+  update: async (state, data) => {
+    return await state.update(data);
+  },
+
+  // delete state
+  remove: async (state) => {
+    return await state.destroy();
+  },
 };
 
-const update = async(state,data) =>{
-    await state.update(data);
-    return state;
-};
-
-const remove = async(state) => {
-    await state.destroy();
-};
-
-module.exports = {getAll, getById, findByName, create, update, remove};
+module.exports = stateService;

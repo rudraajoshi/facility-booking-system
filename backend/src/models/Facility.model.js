@@ -43,6 +43,15 @@ const Facility = sequelize.define('Facility', {
         type: DataTypes.DECIMAL(10,2),
         allowNull: false,
     },
+
+    price_half_day: {
+        type: DataTypes.DECIMAL(10,2),
+        allowNull: true,
+    },
+    price_full_day: {
+        type: DataTypes.DECIMAL(10,2),
+        allowNull: true,
+    },
     availability_status: {
         type: DataTypes.ENUM('available', 'limited', 'booked'),
         allowNull: false,
@@ -50,6 +59,39 @@ const Facility = sequelize.define('Facility', {
     },
     description: {
         type: DataTypes.TEXT,
+        allowNull: true,
+    },
+
+    amenities: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        defaultValue: [],
+    },
+
+    operating_hours: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        defaultValue: { start: '08:00 AM', end: '08:00 PM' },
+    },
+
+    rules: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        defaultValue: [],
+    },
+
+    rating: {
+        type: DataTypes.DECIMAL(2,1),
+        allowNull: true,
+        defaultValue: null,
+    },
+    review_count: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 0,
+    },
+    image_url: {
+        type: DataTypes.STRING(500),
         allowNull: true,
     },
     created_at: {
@@ -60,5 +102,7 @@ const Facility = sequelize.define('Facility', {
     tableName: 'Facilities',
     freezeTableName: true,
     timestamps: false,
+    underscored: true,  
 });
+
 module.exports = Facility;

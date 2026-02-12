@@ -16,5 +16,15 @@ const State = sequelize.define('State', {
     tableName: 'States',
     freezeTableName: true,
     timestamps: false,
+    underscored: true,
 });
+
+
+State.associate = (models) => {
+    State.hasMany(models.City, {
+        foreignKey: 'state_id',
+        as: 'cities'
+    });
+};
+
 module.exports = State;

@@ -1,134 +1,131 @@
-const API_BASE = '/api';
+import { locationAPI } from './api';
 
-export const locationService = {
-  // Get all states
+const locationService = {
+ 
   getAllStates: async () => {
-    const response = await fetch(`${API_BASE}/locations/states`);
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to fetch states');
+    try {
+      const response = await locationAPI.getAllStates();
+      const states = response.data.data;
+      
+      console.log('🔍 Raw states from API:', states);
+      
+      // Normalize the state objects to have consistent property names
+      const normalizedStates = states.map(state => ({
+        id: state.state_id || state.id,
+        name: state.state_name || state.name,
+        // Keep original properties in case they're needed
+        ...state
+      }));
+      
+      console.log('✅ Normalized states:', normalizedStates);
+      
+      return normalizedStates;
+    } catch (error) {
+      console.error('Error fetching states:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch states');
     }
-    
-    return data.data;
   },
 
-  // Get cities by state ID
   getCitiesByState: async (stateId) => {
-    const response = await fetch(`${API_BASE}/locations/states/${stateId}/cities`);
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to fetch cities');
+    try {
+      const response = await locationAPI.getCitiesByState(stateId);
+      const cities = response.data.data;
+      
+      console.log('🔍 Raw cities from API:', cities);
+      
+      // If cities are objects, normalize them
+      if (cities.length > 0 && typeof cities[0] === 'object') {
+        const normalizedCities = cities.map(city => 
+          city.city_name || city.name || city
+        );
+        console.log('✅ Normalized cities:', normalizedCities);
+        return normalizedCities;
+      }
+      
+      // If cities are already strings, return as-is
+      return cities;
+    } catch (error) {
+      console.error('Error fetching cities:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch cities');
     }
-    
-    return data.data;
   },
 
-  // Create new state
+  
   createState: async (stateData) => {
-    const response = await fetch(`${API_BASE}/locations/states`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(stateData),
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to create state');
+    try {
+      const response = await locationAPI.createState(stateData);
+      const state = response.data.data;
+      
+      // Normalize the returned state
+      return {
+        id: state.state_id || state.id,
+        name: state.state_name || state.name,
+        ...state
+      };
+    } catch (error) {
+      console.error('Error creating state:', error);
+      throw new Error(error.response?.data?.message || 'Failed to create state');
     }
-    
-    return data.data;
   },
 
-  // Update state
   updateState: async (stateId, stateData) => {
-    const response = await fetch(`${API_BASE}/locations/states/${stateId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(stateData),
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to update state');
+    try {
+      const response = await locationAPI.updateState(stateId, stateData);
+      const state = response.data.data;
+      
+      // Normalize the returned state
+      return {
+        id: state.state_id || state.id,
+        name: state.state_name || state.name,
+        ...state
+      };
+    } catch (error) {
+      console.error('Error updating state:', error);
+      throw new Error(error.response?.data?.message || 'Failed to update state');
     }
-    
-    return data.data;
   },
 
-  // Delete state
+  
   deleteState: async (stateId) => {
-    const response = await fetch(`${API_BASE}/locations/states/${stateId}`, {
-      method: 'DELETE',
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to delete state');
+    try {
+      const response = await locationAPI.deleteState(stateId);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting state:', error);
+      throw new Error(error.response?.data?.message || 'Failed to delete state');
     }
-    
-    return data;
   },
 
-  // Add city to state
+  
   addCity: async (stateId, cityName) => {
-    const response = await fetch(`${API_BASE}/locations/states/${stateId}/cities`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ cityName }),
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to add city');
+    try {
+      const response = await locationAPI.createCity(stateId, { cityName });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error adding city:', error);
+      throw new Error(error.response?.data?.message || 'Failed to add city');
     }
-    
-    return data.data;
   },
 
-  // Update city name
+
   updateCity: async (stateId, oldCityName, newCityName) => {
-    const response = await fetch(`${API_BASE}/locations/states/${stateId}/cities`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ oldCityName, newCityName }),
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to update city');
+    try {
+      const response = await locationAPI.updateCity(stateId, oldCityName, { cityName: newCityName });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error updating city:', error);
+      throw new Error(error.response?.data?.message || 'Failed to update city');
     }
-    
-    return data.data;
   },
 
-  // Delete city
   deleteCity: async (stateId, cityName) => {
-    const response = await fetch(`${API_BASE}/locations/states/${stateId}/cities/${encodeURIComponent(cityName)}`, {
-      method: 'DELETE',
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to delete city');
+    try {
+      const response = await locationAPI.deleteCity(stateId, cityName);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting city:', error);
+      throw new Error(error.response?.data?.message || 'Failed to delete city');
     }
-    
-    return data;
   },
 };
 

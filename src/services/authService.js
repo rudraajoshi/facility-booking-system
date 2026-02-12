@@ -1,38 +1,48 @@
 import { authAPI } from './api';
 
-// new user
+
 export const registerUser = async (data) => {
   const response = await authAPI.register(data);
-  return response.data;
-};
-
-// login
-export const loginUser = async (data) => {
-  const response = await authAPI.login(data);
-
-  const { token, user } = response.data;
-
+  const { token, user } = response.data.data;
+  
   if (token) {
     localStorage.setItem('token', token);
   }
+  
+  return user;
+};
 
+
+export const loginUser = async ({ email, password }) => {
+  const response = await authAPI.login({ email, password });
+  
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Login failed');
+  }
+  
+  const { token, user } = response.data.data;
+  
+  if (!token || !user) {
+    throw new Error('Invalid response from server');
+  }
+  
+  localStorage.setItem('token', token);
+  
   return user;
 };
 
 
 export const getProfile = async () => {
   const response = await authAPI.getProfile();
-  return response.data;
+  return response.data.data;
 };
 
-// update
+
 export const updateProfile = async (data) => {
   const response = await authAPI.updateProfile(data);
-  return response.data;
+  return response.data.data;
 };
 
-
-// logout
 export const logoutUser = () => {
   localStorage.removeItem('token');
 };

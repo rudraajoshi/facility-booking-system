@@ -3,7 +3,7 @@ const {STATUS} = require('./constants');
 const successResponse = (res, message, data = null, statusCode = STATUS.OK) => {
     const response = {success: true, message};
     if(data !== null) response.data = data;
-    return res.status(res, message, data, STATUS.CREATED);
+    return res.status(statusCode).json(response);
 };
 
 const createdResponse = (res, message, data = null) => {

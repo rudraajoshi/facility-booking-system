@@ -8,11 +8,19 @@ const ExploreByStateSection = ({ facilities }) => {
   const [selectedState, setSelectedState] = useState('all');
   const scrollContainerRef = useRef(null);
 
-  const states = [...new Set(facilities.map(f => f.state).filter(Boolean))].sort();
+
+  const states = [...new Set(
+    facilities
+      .map(f => typeof f.state === 'object' ? f.state?.state_name : f.state)
+      .filter(Boolean)
+  )].sort();
 
   const filteredFacilities = selectedState === 'all' 
     ? facilities 
-    : facilities.filter(f => f.state === selectedState);
+    : facilities.filter(f => {
+        const stateValue = typeof f.state === 'object' ? f.state.state_name : f.state;
+        return stateValue === selectedState;
+      });
 
   const handleBook = (facilityId) => {
     navigate(`/booking/${facilityId}`);
@@ -35,7 +43,7 @@ const ExploreByStateSection = ({ facilities }) => {
 
   if (states.length === 0) {
     return null;
-  }
+  };
 
   const showSlider = filteredFacilities.length > 4;
 
@@ -55,18 +63,35 @@ const ExploreByStateSection = ({ facilities }) => {
           </p>
         </div>
 
-        {/* state filter - LEFT ALIGNED */}
+        {/* state filter  */}
         <div className="flex flex-wrap justify-start gap-3 mb-12">
           <button
+            key="all-states"
             onClick={() => setSelectedState('all')}
             className={`px-6 py-3 rounded-full font-medium transition-all ${
-              selectedState === 'all' ? 'bg-primary-600 text-white shadow-lg' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'}`}>
+              selectedState === 'all' 
+                ? 'bg-primary-600 text-white shadow-lg' 
+                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+            }`}
+          >
             All States
           </button>
           {states.map((state) => {
-            const count = facilities.filter(f => f.state === state).length;
+            const count = facilities.filter(f => {
+              const stateValue = typeof f.state === 'object' ? f.state.state_name : f.state;
+              return stateValue === state;
+            }).length;
+            
             return (
-              <button key={state} onClick={() => setSelectedState(state)} className={`px-6 py-3 rounded-full font-medium transition-all ${selectedState === state ? 'bg-primary-600 text-white shadow-lg' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'}`}>
+              <button 
+                key={state}
+                onClick={() => setSelectedState(state)} 
+                className={`px-6 py-3 rounded-full font-medium transition-all ${
+                  selectedState === state 
+                    ? 'bg-primary-600 text-white shadow-lg' 
+                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                }`}
+              >
                 {state}
                 <span className="ml-2 text-sm opacity-75">({count})</span>
               </button>
@@ -79,14 +104,22 @@ const ExploreByStateSection = ({ facilities }) => {
           showSlider ? (
             <div className="relative">
               {/* left arrow */}
-              <button onClick={() => scroll('left')} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-neutral-800 p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 -ml-4" aria-label="Scroll left">
+              <button 
+                onClick={() => scroll('left')} 
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-neutral-800 p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 -ml-4" 
+                aria-label="Scroll left"
+              >
                 <svg className="w-6 h-6 text-neutral-700 dark:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
 
               {/* scrollable container */}
-              <div ref={scrollContainerRef} className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div 
+                ref={scrollContainerRef} 
+                className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4" 
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
                 {filteredFacilities.map((facility) => (
                   <div key={facility.id} className="flex-shrink-0 w-[350px]">
                     <FacilityCard
@@ -99,14 +132,19 @@ const ExploreByStateSection = ({ facilities }) => {
               </div>
 
               {/* right arrow */}
-              <button onClick={() => scroll('right')} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-neutral-800 p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 -mr-4" aria-label="Scroll right">
+              <button 
+                onClick={() => scroll('right')} 
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-neutral-800 p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 -mr-4" 
+                aria-label="Scroll right"
+              >
                 <svg className="w-6 h-6 text-neutral-700 dark:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"> {filteredFacilities.map((facility) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredFacilities.map((facility) => (
                 <FacilityCard
                   key={facility.id}
                   facility={facility}
@@ -135,8 +173,20 @@ ExploreByStateSection.propTypes = {
     PropTypes.shape({
       id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
-      state: PropTypes.string,
-      city: PropTypes.string,
+      state: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.shape({
+          state_id: PropTypes.string,
+          state_name: PropTypes.string,
+        })
+      ]),
+      city: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.shape({
+          city_id: PropTypes.string,
+          city_name: PropTypes.string,
+        })
+      ]),
     })
   ).isRequired,
 };

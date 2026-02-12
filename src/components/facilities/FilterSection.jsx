@@ -6,13 +6,11 @@ import Badge from '../common/Badge';
 const FilterSection = ({ filters, onFilterChange, onClearFilters }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const categories = [
-    { value: 'all', label: 'All Categories' },
-    { value: 'meeting-room', label: 'Meeting Rooms' },
-    { value: 'training-room', label: 'Training Rooms' },
-    { value: 'sports-court', label: 'Sports Courts' },
-    { value: 'event-hall', label: 'Event Halls' }
-  ];
+    const categories = [
+  { value: 'all', label: 'All Categories' },
+  { value: 1, label: 'Meeting Rooms' },
+  { value: 2, label: 'Training Rooms' }
+];
 
   const statuses = [
     { value: 'all', label: 'All Status' },
@@ -31,12 +29,16 @@ const FilterSection = ({ filters, onFilterChange, onClearFilters }) => {
   ];
 
   const commonAmenities = [
+    'WiFi',
     'Projector',
     'Whiteboard',
     'Video Conferencing',
-    'WiFi',
     'Air Conditioning',
-    'Parking'
+    'Parking',
+    'Audio System',
+    'Coffee/Tea',
+    'Microphones',
+    'Screen/Display'
   ];
 
   const handleAmenityToggle = (amenity) => {
@@ -64,7 +66,7 @@ const FilterSection = ({ filters, onFilterChange, onClearFilters }) => {
         {/* header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <h3 className="text-base font-semibold text-neutral-800">Filters</h3>
+            <h3 className="text-base font-semibold text-neutral-800 dark:text-neutral-100">Filters</h3>
             {hasActiveFilters && (
               <Badge variant="info" size="sm">
                 {activeFilterCount}
@@ -75,14 +77,14 @@ const FilterSection = ({ filters, onFilterChange, onClearFilters }) => {
             {hasActiveFilters && (
               <button 
                 onClick={onClearFilters}
-                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium transition-colors"
               >
                 Clear all
               </button>
             )}
             <button 
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="text-sm text-neutral-600 hover:text-neutral-800 font-medium flex items-center gap-1"
+              className="text-sm text-neutral-600 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 font-medium flex items-center gap-1 transition-colors"
             >
               {showAdvanced ? 'Hide' : 'Show'} Advanced
               <svg 
@@ -97,15 +99,14 @@ const FilterSection = ({ filters, onFilterChange, onClearFilters }) => {
           </div>
         </div>
 
-        {/* basic filters - compact */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           {/* category */}
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">Category</label>
+            <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Category</label>
             <select
               value={filters.category}
               onChange={(e) => onFilterChange('category', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+              className="w-full px-3 py-2 text-sm border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-neutral-800 dark:text-neutral-100 transition-colors"
             >
               {categories.map(cat => (
                 <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -115,24 +116,24 @@ const FilterSection = ({ filters, onFilterChange, onClearFilters }) => {
 
           {/* min capacity */}
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">Min Capacity</label>
+            <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Min Capacity</label>
             <input
               type="number"
               placeholder="e.g., 10"
               value={filters.minCapacity}
               onChange={(e) => onFilterChange('minCapacity', e.target.value)}
               min="1"
-              className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 text-sm border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-neutral-800 dark:text-neutral-100 transition-colors"
             />
           </div>
 
           {/* status */}
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">Status</label>
+            <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Status</label>
             <select
               value={filters.status}
               onChange={(e) => onFilterChange('status', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+              className="w-full px-3 py-2 text-sm border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-neutral-800 dark:text-neutral-100 transition-colors"
             >
               {statuses.map(status => (
                 <option key={status.value} value={status.value}>{status.label}</option>
@@ -140,13 +141,13 @@ const FilterSection = ({ filters, onFilterChange, onClearFilters }) => {
             </select>
           </div>
 
-          {/* sort by - NEW */}
+          {/* sort by */}
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">Sort By</label>
+            <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Sort By</label>
             <select
               value={filters.sortBy || 'name-asc'}
               onChange={(e) => onFilterChange('sortBy', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+              className="w-full px-3 py-2 text-sm border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-neutral-800 dark:text-neutral-100 transition-colors"
             >
               {sortOptions.map(option => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -157,23 +158,23 @@ const FilterSection = ({ filters, onFilterChange, onClearFilters }) => {
 
         {/* advanced filters */}
         {showAdvanced && (
-          <div className="mt-4 pt-4 border-t border-neutral-200">
+          <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
             {/* max price */}
             <div className="mb-4">
-              <label className="block text-xs font-medium text-neutral-700 mb-1.5">Max Price (per hour)</label>
+              <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Max Price (per hour)</label>
               <input
                 type="number"
                 placeholder="e.g., 100"
                 value={filters.maxPrice}
                 onChange={(e) => onFilterChange('maxPrice', e.target.value)}
                 min="1"
-                className="w-full md:w-1/3 px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="w-full md:w-1/3 px-3 py-2 text-sm border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-neutral-800 dark:text-neutral-100 transition-colors"
               />
             </div>
 
             {/* amenities */}
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-2">Amenities</label>
+              <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">Amenities</label>
               <div className="flex flex-wrap gap-2">
                 {commonAmenities.map(amenity => (
                   <label 
@@ -181,8 +182,8 @@ const FilterSection = ({ filters, onFilterChange, onClearFilters }) => {
                     className={`
                       inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-full cursor-pointer transition-all
                       ${filters.amenities?.includes(amenity) 
-                        ? 'bg-primary-100 text-primary-700 border-2 border-primary-500' 
-                        : 'bg-neutral-100 text-neutral-700 border-2 border-transparent hover:border-neutral-300'
+                        ? 'bg-primary-100 text-primary-700 border-2 border-primary-500 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-400' 
+                        : 'bg-neutral-100 text-neutral-700 border-2 border-transparent hover:border-neutral-300 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
                       }
                     `}
                   >

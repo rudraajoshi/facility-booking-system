@@ -129,17 +129,35 @@ function Facilities() {
       results = results.sort((a, b) => {
         switch (filters.sortBy) {
           case 'name-asc':
-            return a.name.localeCompare(b.name);
+            return (a.name || '').localeCompare(b.name || '');
+          
           case 'name-desc':
-            return b.name.localeCompare(a.name);
-          case 'price-asc':
-            return a.pricing.hourly - b.pricing.hourly;
-          case 'price-desc':
-            return b.pricing.hourly - a.pricing.hourly;
-          case 'rating-desc':
-            return b.rating - a.rating;
-          case 'capacity-desc':
-            return b.capacity.max - a.capacity.max;
+            return (b.name || '').localeCompare(a.name || '');
+          
+          case 'price-asc': {
+            const priceA = a.pricing?.hourly || 0;
+            const priceB = b.pricing?.hourly || 0;
+            return priceA - priceB;
+          }
+          
+          case 'price-desc': {
+            const priceA = a.pricing?.hourly || 0;
+            const priceB = b.pricing?.hourly || 0;
+            return priceB - priceA;
+          }
+          
+          case 'rating-desc': {
+            const ratingA = a.rating || 0;
+            const ratingB = b.rating || 0;
+            return ratingB - ratingA;
+          }
+          
+          case 'capacity-desc': {
+            const capA = a.capacity?.max || 0;
+            const capB = b.capacity?.max || 0;
+            return capB - capA;
+          }
+          
           default:
             return 0;
         }

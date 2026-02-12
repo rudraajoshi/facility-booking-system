@@ -1,246 +1,249 @@
-import { createContext, useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
+import { createContext, useState, useEffect, useContext } from 'react';
+import { AuthContext } from './AuthContext';
+import api from '@/services/api';
 
 export const BookingContext = createContext();
 
 export const BookingProvider = ({ children }) => {
   const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { user, isAuthenticated } = useContext(AuthContext);
 
-  // fetch bookings from API
-  const fetchBookings = async (userEmail = null) => {
+
+  const mapBooking = (booking) => {
+    const facilityLocation = booking.facility 
+      ? `${booking.facility.building_name}${booking.facility.floor ? ', Floor ' + booking.facility.floor : ''}${booking.facility.city?.city_name ? ', ' + booking.facility.city.city_name : ''}${booking.facility.city?.state?.state_name ? ', ' + booking.facility.city.state.state_name : ''}`
+      : 'N/A';
+    
+    return {
+
+      id: booking.booking_id,
+      userId: booking.user_id,
+      facilityId: booking.facility_id,
+      facilityName: booking.facility?.facility_name || 'Unknown Facility',
+      facilityLocation: facilityLocation,
+      buildingName: booking.facility?.building_name || 'N/A',
+      floor: booking.facility?.floor || 'N/A',
+      cityName: booking.facility?.city?.city_name || 'N/A',
+      stateName: booking.facility?.city?.state?.state_name || 'N/A',
+      categoryName: booking.facility?.category?.category_name || 'N/A',
+      userName: booking.user?.name || 'N/A',
+      userEmail: booking.user?.email || 'N/A',
+      date: booking.booking_date,
+      startTime: booking.start_time,
+      endTime: booking.end_time,
+      status: booking.booking_status,
+      createdAt: booking.created_at,
+      
+
+      booking_id: booking.booking_id,
+      user_id: booking.user_id,
+      facility_id: booking.facility_id,
+      booking_date: booking.booking_date,
+      start_time: booking.start_time,
+      end_time: booking.end_time,
+      booking_status: booking.booking_status,
+      created_at: booking.created_at,
+
+      facility: booking.facility,
+      user: booking.user,
+
+      _raw: booking
+    };
+  };
+
+  const fetchBookings = async (filters = {}) => {
+    if (!isAuthenticated) return;
+    
     try {
       setLoading(true);
       setError(null);
       
-      const url = userEmail 
-        ? `/api/bookings?userEmail=${userEmail}`
-        : '/api/bookings';
+      const queryParams = new URLSearchParams();
+      if (filters.facility_id) queryParams.append('facility_id', filters.facility_id);
+      if (filters.booking_status) queryParams.append('booking_status', filters.booking_status);
+      if (filters.booking_date) queryParams.append('booking_date', filters.booking_date);
+      if (filters.user_id) queryParams.append('user_id', filters.user_id);
       
-      const response = await fetch(url);
-      const result = await response.json();
-
-      if (result.success) {
-        setBookings(result.data);
-      }
+      const response = await api.get(`/bookings?${queryParams.toString()}`);
+      
+      console.log('📊 API Response:', response.data);
+      
+      const mappedBookings = response.data.data.map(mapBooking);
+      
+      console.log('✅ Mapped Bookings:', mappedBookings);
+      
+      setBookings(mappedBookings);
     } catch (err) {
-      setError('Failed to load bookings');
-      console.error('Error fetching bookings:', err);
+      console.error('❌ Error fetching bookings:', err);
+      setError(err.response?.data?.message || 'Failed to fetch bookings');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    const controller = new AbortController();
-    let isMounted = true;
 
-    const loadBookings = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const userEmail = localStorage.getItem('currentUserEmail');
-        const url = userEmail 
-          ? `/api/bookings?userEmail=${userEmail}`
-          : '/api/bookings';
-        
-        const response = await fetch(url, {
-          signal: controller.signal
-        });
-        const result = await response.json();
+  const fetchMyBookings = async () => {
+    return fetchBookings();
+  };
 
-        if (isMounted && result.success) {
-          setBookings(result.data);
-        }
-      } catch (err) {
-        if (err.name !== 'AbortError' && isMounted) {
-          setError('Failed to load bookings');
-          console.error('Error fetching bookings:', err);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
 
-    loadBookings();
+  const getUpcomingBookings = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return bookings.filter(booking => {
+      const bookingDate = new Date(booking.booking_date);
+      return (
+        booking.booking_status === 'confirmed' &&
+        bookingDate >= today
+      );
+    }).sort((a, b) => new Date(a.booking_date) - new Date(b.booking_date));
+  };
 
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, []);
 
-  /**
-   * create a new booking
-   * @param {Object} bookingData
-   * @returns {Promise<Object|null>}
-   */
+  const getPastBookings = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return bookings.filter(booking => {
+      const bookingDate = new Date(booking.booking_date);
+      return (
+        booking.booking_status === 'completed' ||
+        (bookingDate < today && booking.booking_status !== 'cancelled')
+      );
+    }).sort((a, b) => new Date(b.booking_date) - new Date(a.booking_date));
+  };
+
+
+  const getCancelledBookings = () => {
+    return bookings.filter(booking => booking.booking_status === 'cancelled')
+      .sort((a, b) => new Date(b.booking_date) - new Date(a.booking_date));
+  };
+
+
+  const fetchBookingById = async (id) => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/bookings/${id}`);
+      return mapBooking(response.data.data);
+    } catch (err) {
+      console.error('Error fetching booking:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   const createBooking = async (bookingData) => {
     try {
-      const response = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookingData),
-      });
+      setLoading(true);
+      setError(null);
+      
+      const response = await api.post('/bookings', bookingData);
+      
 
-      const result = await response.json();
-
-      if (result.success) {
-        setBookings(prev => [...prev, result.data]);
-        return result.data;
-      } else {
-        console.error('Failed to create booking:', result.error);
-        return null;
-      }
+      await fetchBookings();
+      
+      return response.data;
     } catch (err) {
       console.error('Error creating booking:', err);
-      return null;
+      setError(err.response?.data?.message || 'Failed to create booking');
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
-  /**
-   * get booking by ID
-   * @param {string} bookingId
-   * @returns {Object|null}
-   */
-  const getBookingById = (bookingId) => {
-    return bookings.find(b => b.bookingId === bookingId) || null;
-  };
 
-  /**
-   * get bookings by facility ID
-   * @param {string} facilityId
-   * @returns {Array}
-   */
-  const getBookingsByFacility = (facilityId) => {
-    return bookings.filter(b => b.facilityId === facilityId);
-  };
-
-  /**
-   * get upcoming bookings
-   * @returns {Array}
-   */
-  const getUpcomingBookings = () => {
-    const now = new Date();
-    return bookings.filter(booking => {
-      const bookingDate = new Date(booking.date);
-      return bookingDate >= now && booking.status === 'confirmed';
-    }).sort((a, b) => new Date(a.date) - new Date(b.date));
-  };
-
-  /**
-   * get past bookings
-   * @returns {Array}
-   */
-  const getPastBookings = () => {
-    const now = new Date();
-    return bookings.filter(booking => {
-      const bookingDate = new Date(booking.date);
-      return bookingDate < now || booking.status === 'completed';
-    }).sort((a, b) => new Date(b.date) - new Date(a.date));
-  };
-
-  /**
-   * cancel a booking
-   * @param {string} bookingId
-   * @returns {Promise<boolean>}
-   */
-  const cancelBooking = async (bookingId) => {
+  const updateBooking = async (id, updates) => {
     try {
-      const response = await fetch(`/api/bookings/${bookingId}`, {
-        method: 'DELETE',
-      });
+      setLoading(true);
+      setError(null);
+      
+      const response = await api.put(`/bookings/${id}`, updates);
+      
 
-      const result = await response.json();
-
-      if (result.success) {
-        setBookings(prev =>
-          prev.map(b =>
-            b.bookingId === bookingId
-              ? { ...b, status: 'cancelled', updatedAt: new Date().toISOString() }
-              : b
-          )
-        );
-        return true;
-      } else {
-        console.error('Failed to cancel booking:', result.error);
-        return false;
-      }
-    } catch (err) {
-      console.error('Error cancelling booking:', err);
-      return false;
-    }
-  };
-
-  /**
-   * update a booking
-   * @param {string} bookingId
-   * @param {Object} updates
-   * @returns {Promise<boolean>}
-   */
-  const updateBooking = async (bookingId, updates) => {
-    try {
-      const response = await fetch(`/api/bookings/${bookingId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updates),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setBookings(prev =>
-          prev.map(b => (b.bookingId === bookingId ? result.data : b))
-        );
-        return true;
-      } else {
-        console.error('Failed to update booking:', result.error);
-        return false;
-      }
+      await fetchBookings();
+      
+      return response.data;
     } catch (err) {
       console.error('Error updating booking:', err);
-      return false;
+      setError(err.response?.data?.message || 'Failed to update booking');
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
-  /**
-   * check if a time slot is available
-   * @param {string} facilityId
-   * @param {string} date
-   * @param {string} timeSlot
-   * @returns {boolean}
-   */
-  const isTimeSlotAvailable = (facilityId, date, timeSlot) => {
-    return !bookings.some(
-      booking =>
-        booking.facilityId === facilityId &&
-        booking.date === date &&
-        booking.timeSlot === timeSlot &&
-        booking.status !== 'cancelled'
-    );
+
+  const updateBookingStatus = async (id, status) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await api.put(`/bookings/${id}/status`, { 
+        booking_status: status 
+      });
+      
+
+      await fetchBookings();
+      
+      return response.data;
+    } catch (err) {
+      console.error('Error updating booking status:', err);
+      setError(err.response?.data?.message || 'Failed to update booking status');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
+
+
+  const cancelBooking = async (id) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await api.delete(`/bookings/${id}`);
+      
+
+      await fetchBookings();
+      
+      return response.data;
+    } catch (err) {
+      console.error('Error cancelling booking:', err);
+      setError(err.response?.data?.message || 'Failed to cancel booking');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchBookings();
+    }
+  }, [isAuthenticated]);
 
   const value = {
     bookings,
     loading,
     error,
-    createBooking,
-    getBookingById,
-    getBookingsByFacility,
+    fetchBookings,
+    fetchMyBookings,
+    fetchBookingById,
     getUpcomingBookings,
     getPastBookings,
-    cancelBooking,
+    getCancelledBookings,
+    createBooking,
     updateBooking,
-    isTimeSlotAvailable,
-    fetchBookings, 
+    updateBookingStatus,
+    cancelBooking,
+    refreshBookings: fetchBookings
   };
 
   return (
@@ -248,8 +251,4 @@ export const BookingProvider = ({ children }) => {
       {children}
     </BookingContext.Provider>
   );
-};
-
-BookingProvider.propTypes = {
-  children: PropTypes.node.isRequired,
 };

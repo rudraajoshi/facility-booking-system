@@ -19,5 +19,15 @@ const City = sequelize.define('City', {
     tableName: 'Cities',
     freezeTableName: true,
     timestamps: false,
+    underscored: true
 });
+
+
+City.associate = (models) => {
+    City.belongsTo(models.State, {
+        foreignKey: 'state_id',
+        as: 'state'
+    });
+};
+
 module.exports = City;

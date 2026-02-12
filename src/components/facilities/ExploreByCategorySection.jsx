@@ -8,10 +8,30 @@ const ExploreByCategorySection = ({ facilities = [] }) => {
     const [activeCategory, setActiveCategory] = useState('All');
     const sliderRef = useRef(null);
 
-    const categories = ['All', ...new Set(facilities.map(f => f.type || f.category).filter(Boolean))];
+    const getCategoryValue = (facility) => {
+      const categoryField = facility.type || facility.category;
+      if (!categoryField) return 'Other';
+      
+
+      if (typeof categoryField === 'object' && categoryField.category_name) {
+        return categoryField.category_name;
+      }
+
+      if (typeof categoryField === 'string') {
+        return categoryField;
+      }
+      
+      return 'Other';
+    };
+
+    const categories = ['All', ...new Set(
+      facilities
+        .map(f => getCategoryValue(f))
+        .filter(Boolean)
+    )];
 
     const facilitiesByCategory = facilities.reduce((acc, facility) => {
-        const category = facility.type || facility.category || 'Other';
+        const category = getCategoryValue(facility);
         if(!acc[category]){
             acc[category] = [];
         }
@@ -61,7 +81,7 @@ const ExploreByCategorySection = ({ facilities = [] }) => {
           </p>
         </div>
 
-        {/* category tabs */}
+        {/* category tabs  */}
         <div className="mb-8 overflow-x-auto pb-2 scrollbar-minimal">
           <div className="flex gap-3 min-w-max">
             {categories.map((category) => (
@@ -156,8 +176,20 @@ ExploreByCategorySection.propTypes = {
     PropTypes.shape({
       id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
-      type: PropTypes.string,
-      category: PropTypes.string,
+      type: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.shape({
+          category_id: PropTypes.string,
+          category_name: PropTypes.string,
+        })
+      ]),
+      category: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.shape({
+          category_id: PropTypes.string,
+          category_name: PropTypes.string,
+        })
+      ]),
     })
   ).isRequired,
 };

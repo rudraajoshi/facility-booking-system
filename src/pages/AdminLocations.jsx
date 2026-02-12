@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { locationService } from '@/services/locationService';
+import  locationService  from '@/services/locationService';
 
 const AdminLocations = () => {
   const navigate = useNavigate();
@@ -11,27 +11,26 @@ const AdminLocations = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // State modal
+  // state modal
   const [isStateModalOpen, setIsStateModalOpen] = useState(false);
   const [stateModalMode, setStateModalMode] = useState('add');
   const [selectedState, setSelectedState] = useState(null);
   const [stateFormData, setStateFormData] = useState({ name: '', code: '' });
   
-  // City modal
+  // city modal
   const [isCityModalOpen, setIsCityModalOpen] = useState(false);
   const [cityModalMode, setCityModalMode] = useState('add');
   const [selectedStateForCity, setSelectedStateForCity] = useState(null);
   const [selectedCity, setSelectedCity] = useState('');
   const [cityFormData, setCityFormData] = useState({ cityName: '' });
 
-  // Redirect if not admin
+
   useEffect(() => {
     if (!isAdmin) {
       navigate('/admin');
     }
   }, [isAdmin, navigate]);
 
-  // Load states
   useEffect(() => {
     loadStates();
   }, []);
@@ -50,7 +49,7 @@ const AdminLocations = () => {
     }
   };
 
-  // State handlers
+
   const handleOpenAddStateModal = () => {
     setStateModalMode('add');
     setStateFormData({ name: '', code: '' });
@@ -113,7 +112,6 @@ const AdminLocations = () => {
     }
   };
 
-  // City handlers
   const handleOpenAddCityModal = (state) => {
     setCityModalMode('add');
     setSelectedStateForCity(state);
@@ -205,11 +203,10 @@ const AdminLocations = () => {
           </div>
         )}
 
-        {/* States Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {states.map((state) => (
             <div key={state.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-              {/* State Header */}
+              {/* header */}
               <div className="bg-primary-600 text-white p-4">
                 <div className="flex justify-between items-start">
                   <div>
@@ -241,7 +238,7 @@ const AdminLocations = () => {
                 </div>
               </div>
 
-              {/* Cities List */}
+              {/* cities list*/}
               <div className="p-4">
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="text-sm font-semibold text-neutral-700">Cities ({state.cities?.length || 0})</h4>
@@ -306,7 +303,7 @@ const AdminLocations = () => {
         )}
       </div>
 
-      {/* State Modal */}
+      {/* state modal */}
       {isStateModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full">
@@ -381,7 +378,7 @@ const AdminLocations = () => {
         </div>
       )}
 
-      {/* City Modal */}
+      {/* city modal */}
       {isCityModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full">
